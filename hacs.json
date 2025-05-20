@@ -1,0 +1,7 @@
+{
+  "name": "Pstryk.pl Integration",
+  "content_in_root": false,
+  "domain": "pstryk_pl",
+  "country": "PL",
+  "homeassistant": "2024.1.0"
+}
