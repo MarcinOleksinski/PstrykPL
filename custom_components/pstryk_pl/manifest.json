@@ -1,0 +1,15 @@
+{
+  "domain": "pstryk_pl",
+  "name": "Pstryk.pl Integration",
+  "version": "0.0.1",
+  "documentation": "https://github.com/MarcinOleksinski/PstrykPL",
+  "issue_tracker": "https://github.com/MarcinOleksinski/PstrykPL/issues",
+  "dependencies": [],
+  "codeowners": ["@MarcinOleksinski"],
+  "requirements": [],
+  "iot_class": "cloud_polling",
+  "integration_type": "hub",
+  "after_dependencies": [],
+  "config_flow": false,
+  "homeassistant": "2024.1.0"
+}
