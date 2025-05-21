@@ -19,9 +19,8 @@ class PstrykDummySensor(SensorEntity):
 
     def __init__(self):
         """Initialize the sensor."""
-        self._attr_native_value = 123.45  # przykładowa wartość
+        self._attr_native_value = 123.45
 
     async def async_update(self):
-        """Fetch new state data for the sensor."""
-        # Tu w przyszłości będzie zapytanie do API Pstryk.pl
+        """Update state - fake update for now."""
         self._attr_native_value = 123.45
