@@ -1,4 +1,5 @@
 """API client for Pstryk.pl."""
+import asyncio
 import aiohttp
 import async_timeout
 
