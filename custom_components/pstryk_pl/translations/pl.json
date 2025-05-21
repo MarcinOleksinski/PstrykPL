@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfiguracja Pstryk.pl",
+        "description": "Podaj swój klucz API z Pstryk.pl.",
+        "data": {
+          "api_key": "Klucz API"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie można połączyć z API Pstryk.pl.",
+      "invalid_auth": "Nieprawidłowe uwierzytelnienie.",
+      "unknown": "Wystąpił nieznany błąd."
+    },
+    "abort": {
+      "already_configured": "Ta integracja jest już skonfigurowana."
+    }
+  }
+}

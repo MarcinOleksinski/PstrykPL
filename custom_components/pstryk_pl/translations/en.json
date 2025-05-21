@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Pstryk.pl",
+        "description": "Enter your Pstryk.pl API key.",
+        "data": {
+          "api_key": "API Key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the Pstryk.pl API.",
+      "invalid_auth": "Invalid authentication.",
+      "unknown": "Unknown error occurred."
+    },
+    "abort": {
+      "already_configured": "This integration is already configured."
+    }
+  }
+}
