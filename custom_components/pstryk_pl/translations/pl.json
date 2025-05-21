@@ -10,9 +10,9 @@
       }
     },
     "error": {
-      "cannot_connect": "Nie można połączyć z API Pstryk.pl.",
-      "invalid_auth": "Nieprawidłowe uwierzytelnienie.",
-      "unknown": "Wystąpił nieznany błąd."
+    "cannot_connect": "Nie można połączyć się z API Pstryk.pl.",
+    "invalid_auth": "Nieprawidłowy klucz API.",
+    "unknown": "Wystąpił nieoczekiwany błąd."
     },
     "abort": {
       "already_configured": "Ta integracja jest już skonfigurowana."
