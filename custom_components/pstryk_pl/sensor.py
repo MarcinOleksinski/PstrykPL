@@ -1,6 +1,6 @@
 """Sensory Pstryk.pl z cenami energii."""
 from homeassistant.components.sensor import SensorEntity
-#from homeassistant.const import CURRENCY_ZLOTY
+"""from homeassistant.const import CURRENCY_ZLOTY"""
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 
