@@ -1,45 +1,32 @@
-"""API client for Pstryk.pl."""
-import asyncio
-import aiohttp
-import async_timeout
+async def test_connection(self) -> bool:
+    """Send test request to verify API key."""
+    url = f"{BASE_URL}/integrations/pricing/"
+    headers = {"Authorization": self.api_key}
 
-BASE_URL = "https://api.pstryk.pl"
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    window_start = now.replace(minute=0, second=0, microsecond=0)
+    window_end = window_start + timedelta(hours=1)
 
+    params = {
+        "window_start": window_start.isoformat(),
+        "window_end": window_end.isoformat(),
+        "resolution": "hour"
+    }
 
-class PstrykApi:
-    def __init__(self, api_key: str, session: aiohttp.ClientSession):
-        self.api_key = api_key
-        self.session = session
-
-    async def test_connection(self) -> bool:
-        """Send test request to verify API key."""
-        url = f"{BASE_URL}/integrations/pricing/"
-        headers = {"Authorization": self.api_key}
-
-        params = {
-            "window_start": "2025-05-20T10:00:00Z",
-            "window_end": "2025-05-20T11:00:00Z",
-            "resolution": "hour"
-        }
-
-        try:
-            async with async_timeout.timeout(10):
-                response = await self.session.get(url, headers=headers, params=params)
-                if response.status == 200:
-                    return True
-                elif response.status in (401, 403):
-                    raise InvalidAuth
-                else:
-                    raise CannotConnect
-        except asyncio.TimeoutError:
-            raise CannotConnect
-        except aiohttp.ClientError:
-            raise CannotConnect
-
-
-class CannotConnect(Exception):
-    """Error to indicate we cannot connect to Pstryk.pl."""
-
-
-class InvalidAuth(Exception):
-    """Error to indicate API key is invalid."""
+    try:
+        async with async_timeout.timeout(10):
+            response = await self.session.get(url, headers=headers, params=params)
+            if response.status == 200:
+                return True
+            elif response.status in (401, 403):
+                raise InvalidAuth
+            elif response.status == 400:
+                text = await response.text()
+                raise CannotConnect(f"400 Bad Request: {text}")
+            else:
+                raise CannotConnect(f"Unexpected status: {response.status}")
+    except asyncio.TimeoutError:
+        raise CannotConnect("Timeout")
+    except aiohttp.ClientError as e:
+        raise CannotConnect(str(e))
