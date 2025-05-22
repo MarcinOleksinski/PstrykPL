@@ -1,12 +1,18 @@
+"""Inicjalizacja integracji Pstryk.pl."""
 import logging
 from aiohttp import ClientSession
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+
+from .const import DOMAIN
 from .api import PstrykApi
 from .coordinator import PstrykPricingCoordinator
-from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

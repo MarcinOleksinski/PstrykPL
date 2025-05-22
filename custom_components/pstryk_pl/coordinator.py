@@ -1,3 +1,4 @@
+"""Koordynator danych Pstryk.pl."""
 from datetime import timedelta
 import logging
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -8,19 +9,20 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class PstrykPricingCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, api: PstrykApi, resolution: str = DEFAULT_RESOLUTION, days: int = DEFAULT_DAYS):
+    def __init__(self, hass, api: PstrykApi):
         super().__init__(
             hass,
             _LOGGER,
-            name="PstrykPricingCoordinator",
+            name="Pstryk Pricing Coordinator",
             update_interval=timedelta(minutes=5),
         )
         self.api = api
-        self.resolution = resolution
-        self.days = days
 
     async def _async_update_data(self):
         try:
-            return await self.api.get_pricing(self.resolution, self.days)
+            return await self.api.get_pricing(
+                resolution=DEFAULT_RESOLUTION,
+                days=DEFAULT_DAYS
+            )
         except Exception as err:
-            raise UpdateFailed(f"Error fetching data: {err}")
+            raise UpdateFailed(f"Update failed: {err}")
