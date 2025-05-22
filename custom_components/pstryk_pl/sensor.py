@@ -23,7 +23,7 @@ class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"Pstryk Cena energii ({frame.get('start', '')[-8:-3]})"
         self._attr_native_unit_of_measurement = "PLN"
         self._attr_device_class = "monetary"
-        self._attr_state_class = "measurement"
+        self._attr_state_class = None  # zgodne z device_class: monetary
         self.frame = frame
 
     @property
