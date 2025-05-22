@@ -14,7 +14,7 @@ class PstrykApi:
     async def test_connection(self) -> bool:
         """Send test request to verify API key."""
         url = f"{BASE_URL}/integrations/pricing/"
-        headers = {"Authorization": f"{self.api_key}"}
+        headers = {"Authorization": self.api_key}
 
         params = {
             "window_start": "2025-05-20T10:00:00Z",
