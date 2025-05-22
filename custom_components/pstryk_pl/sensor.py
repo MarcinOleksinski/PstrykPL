@@ -1,26 +1,41 @@
-"""Example sensor for Pstryk.pl integration."""
-
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import ENERGY_KILO_WATT_HOUR
-from .const import DOMAIN, DEFAULT_NAME
+from homeassistant.const import CURRENCY_ZLOTY
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from .const import DOMAIN
 
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Set up the sensor platform."""
-    async_add_entities([PstrykDummySensor()])
+async def async_setup_entry(hass, entry, async_add_entities):
+    api = hass.data[DOMAIN][entry.entry_id]["api"]
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    await coordinator.async_config_entry_first_refresh()
+
+    sensors = []
+    for idx, frame in enumerate(coordinator.data.get("frames", [])):
+        sensors.append(PstrykPriceSensor(coordinator, f"frame_{idx}", frame))
+
+    async_add_entities(sensors)
 
 
-class PstrykDummySensor(SensorEntity):
-    """A dummy sensor for demonstration."""
+class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator, unique_id: str, frame: dict):
+        super().__init__(coordinator)
+        self._attr_unique_id = f"pstryk_price_{unique_id}"
+        self._attr_name = f"Pstryk Cena energii {frame.get('start', '')[-8:-3]}"
+        self._attr_native_unit_of_measurement = CURRENCY_ZLOTY
+        self._attr_device_class = "monetary"
+        self._attr_state_class = "measurement"
+        self.frame = frame
 
-    _attr_name = DEFAULT_NAME
-    _attr_unit_of_measurement = ENERGY_KILO_WATT_HOUR
-    _attr_unique_id = "pstryk_dummy_sensor"
+    @property
+    def native_value(self):
+        return self.frame.get("price_gross")
 
-    def __init__(self):
-        """Initialize the sensor."""
-        self._attr_native_value = 123.45
-
-    async def async_update(self):
-        """Update state - fake update for now."""
-        self._attr_native_value = 123.45
+    @property
+    def extra_state_attributes(self):
+        return {
+            "price_net": self.frame.get("price_net"),
+            "is_cheap": self.frame.get("is_cheap"),
+            "is_expensive": self.frame.get("is_expensive"),
+            "start": self.frame.get("start"),
+            "end": self.frame.get("end"),
+        }
