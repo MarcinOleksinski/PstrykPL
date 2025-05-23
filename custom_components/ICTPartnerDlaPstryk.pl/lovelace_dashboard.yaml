@@ -1,0 +1,49 @@
+# Przykładowy dashboard Lovelace dla integracji ICTPartnerDlaPstryk.pl
+views:
+  - title: Pstryk Energia
+    path: pstryk
+    icon: mdi:flash
+    cards:
+      - type: entities
+        title: Podsumowanie
+        entities:
+          - sensor.pstryk_total_energy_cost
+          - sensor.pstryk_total_carbon_footprint
+          - sensor.pstryk_total_energy_usage
+          - sensor.pstryk_total_energy_sold
+      - type: history-graph
+        title: Ceny energii (dzisiaj)
+        entities:
+          - sensor.pstryk_price_today
+        hours_to_show: 24
+        refresh_interval: 60
+      - type: history-graph
+        title: Ceny energii (jutro)
+        entities:
+          - sensor.pstryk_price_tomorrow
+        hours_to_show: 24
+        refresh_interval: 60
+      - type: history-graph
+        title: Ślad węglowy (dzisiaj)
+        entities:
+          - sensor.pstryk_carbon_footprint
+        hours_to_show: 24
+        refresh_interval: 60
+      - type: history-graph
+        title: Koszt energii (dzisiaj)
+        entities:
+          - sensor.pstryk_energy_cost
+        hours_to_show: 24
+        refresh_interval: 60
+      - type: history-graph
+        title: Zużycie energii (dzisiaj)
+        entities:
+          - sensor.pstryk_energy_usage
+        hours_to_show: 24
+        refresh_interval: 60
+      - type: entities
+        title: Alerty
+        entities:
+          - sensor.pstryk_is_expensive_now
+          - sensor.pstryk_is_cheap_now
+          - sensor.pstryk_is_live

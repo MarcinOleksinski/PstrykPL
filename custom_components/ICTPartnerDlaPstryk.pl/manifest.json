@@ -1,0 +1,12 @@
+{
+  "domain": "ictpartnerdlapstrykpl",
+  "name": "ICTPartnerDlaPstryk.pl",
+  "version": "1.0.0",
+  "documentation": "https://github.com/ICTPartnerPL/ICTPartnerDlaPstryk.pl",
+  "issue_tracker": "https://github.com/ICTPartnerPL/ICTPartnerDlaPstryk.pl/issues",
+  "requirements": ["requests>=2.31.0"],
+  "dependencies": [],
+  "codeowners": ["@ICTPartnerPL"],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}

@@ -1,0 +1,19 @@
+{
+  "title": "Integracja ICTPartnerDlaPstryk.pl",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Połącz z pstryk.pl",
+        "description": "Wprowadź swój klucz API do pstryk.pl.",
+        "data": {
+          "api_key": "Klucz API"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie można połączyć z pstryk.pl. Sprawdź klucz API.",
+      "invalid_auth": "Nieprawidłowa autoryzacja.",
+      "unknown": "Wystąpił nieznany błąd."
+    }
+  }
+}

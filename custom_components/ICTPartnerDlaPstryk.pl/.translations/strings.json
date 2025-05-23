@@ -1,0 +1,19 @@
+{
+  "title": "ICTPartnerDlaPstryk.pl Integration",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to pstryk.pl",
+        "description": "Enter your API key to connect to pstryk.pl.",
+        "data": {
+          "api_key": "API Key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to pstryk.pl. Check your API key.",
+      "invalid_auth": "Invalid authentication.",
+      "unknown": "Unknown error occurred."
+    }
+  }
+}

@@ -1,0 +1,7 @@
+DOMAIN = "ictpartnerdlapstrykpl"
+CONF_API_KEY = "api_key"
+CONF_METERS = "meters"
+CONF_TIMEZONE = "for_tz"
+CONF_ALERT_PRICE = "alert_price"
+CONF_ALERT_USAGE = "alert_usage"
+API_BASE_URL = "https://pstryk.pl/api"

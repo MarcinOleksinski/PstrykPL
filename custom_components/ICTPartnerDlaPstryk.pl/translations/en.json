@@ -1,0 +1,5 @@
+{
+  "component.title": "ICTPartnerDlaPstryk.pl Integration",
+  "component.config.api_key": "API Key",
+  "component.config.api_key.description": "Enter your API key for pstryk.pl"
+}
