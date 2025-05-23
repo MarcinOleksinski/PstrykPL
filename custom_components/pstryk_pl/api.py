@@ -62,7 +62,25 @@ class PstrykApi:
         except aiohttp.ClientError as e:
             raise CannotConnect(str(e))
 
+    async def get_energy_cost(self, window_start, window_end, resolution="hour") -> dict:
+        url = f"{BASE_URL}/integrations/meter-data/energy-cost/"
+        headers = {"Authorization": self.api_key}
+        params = {
+            "window_start": window_start.isoformat(),
+            "window_end": window_end.isoformat(),
+            "resolution": resolution
+        }
 
+        try:
+            async with async_timeout.timeout(15):
+                response = await self.session.get(url, headers=headers, params=params)
+                if response.status == 200:
+                    return await response.json()
+                raise CannotConnect(f"Status: {response.status}")
+        except asyncio.TimeoutError:
+            raise CannotConnect("Timeout")
+        except aiohttp.ClientError as e:
+            raise CannotConnect(str(e))
 class CannotConnect(Exception):
     """Błąd połączenia z API."""
 
