@@ -1,1 +1,0 @@
-{ "config": { "step": { "user": { "title": "Configure Pstryk.pl", "description": "Enter API key and parameters.", "data": { "api_key": "API Key", "resolution": "Resolution", "days": "Days" } } } } }

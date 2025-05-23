@@ -1,3 +1,0 @@
-DOMAIN = "pstryk_pl"
-DEFAULT_RESOLUTION = "hour"
-DEFAULT_DAYS = 2
