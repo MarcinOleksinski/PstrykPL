@@ -1,9 +1,10 @@
-# custom_components/pstryk_pl/__init__.py - wersja finalna
+# custom_components/pstryk_pl/__init__.py
 
 import logging
 from aiohttp import ClientSession
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from .api import PstrykApi
 from .coordinator import PstrykPricingCoordinator
@@ -12,7 +13,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["sensor", "binary_sensor", "cost_sensor"]
+PLATFORMS = ["sensor", "binary_sensor"]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -31,6 +32,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     pricing_coordinator = PstrykPricingCoordinator(hass, api, resolution=resolution, days=days)
     cost_coordinator = PstrykEnergyCostCoordinator(hass, api, resolution=resolution, days=days)
+
+    try:
+        await pricing_coordinator.async_config_entry_first_refresh()
+        await cost_coordinator.async_config_entry_first_refresh()
+    except Exception as err:
+        _LOGGER.error("API initialization failed: %s", err)
+        raise ConfigEntryNotReady(f"API unavailable: {err}")
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "api": api,
