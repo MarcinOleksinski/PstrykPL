@@ -1,7 +1,7 @@
 {
   "domain": "pstryk_pl",
   "name": "Pstryk.pl Integration",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "documentation": "https://github.com/MarcinOleksinski/PstrykPL",
   "issue_tracker": "https://github.com/MarcinOleksinski/PstrykPL/issues",
   "dependencies": [],

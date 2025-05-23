@@ -1,2 +1,1 @@
-# PstrykPL
-Integracja Pstryk.pl z HomeAssistant
+# Pstryk.pl Home Assistant Integration
