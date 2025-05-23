@@ -72,6 +72,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         PstrykCostComponentSensor(coordinator, "var_dist_cost_net"),
         # 7. Info sensors
         PstrykInfoSensor(coordinator, "last_update", "Pstryk Last Update", None, "mdi:update"),
+        PstrykInfoSensor(coordinator, "integration_version", "Pstryk Integration Version", None, "mdi:information-outline"),
         PstrykApiStatusSensor(coordinator),
     ]
     async_add_entities(sensors)
@@ -248,8 +249,25 @@ class PstrykInfoSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        # Example: last update time
-        return datetime.utcnow().isoformat()
+        if self._key == "last_update":
+            return datetime.utcnow().isoformat()
+        if self._key == "integration_version":
+            # Try to read version from version file, fallback to manifest.json
+            import os
+            import json
+            try:
+                version_path = os.path.join(os.path.dirname(__file__), "version")
+                with open(version_path, "r") as f:
+                    return f.read().strip()
+            except Exception:
+                try:
+                    manifest_path = os.path.join(os.path.dirname(__file__), "manifest.json")
+                    with open(manifest_path, "r") as f:
+                        manifest = json.load(f)
+                        return manifest.get("version")
+                except Exception:
+                    return None
+        return None
 
     @property
     def extra_state_attributes(self):
@@ -349,27 +367,6 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         data["energy_usage_day"] = fetch_energy_usage(resolution="day")
         data["energy_usage_month"] = fetch_energy_usage(resolution="month")
         data["energy_usage_year"] = fetch_energy_usage(resolution="year")
-        return data
-            return resp.json()
-        def fetch_energy_cost():
-            url = f"https://pstryk.pl/api/integrations/meter-data/energy-cost/?resolution=hour&window_start={today}T00:00:00Z"
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        def fetch_energy_usage():
-            url = f"https://pstryk.pl/api/integrations/meter-data/energy-usage/?resolution=hour&window_start={today}T00:00:00Z"
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        data = {}
-        data["price_today"] = fetch_prices(today)
-        if datetime.utcnow().hour >= 14:
-            data["price_tomorrow"] = fetch_prices(tomorrow)
-        else:
-            data["price_tomorrow"] = None
-        data["carbon_footprint"] = fetch_carbon_footprint()
-        data["energy_cost"] = fetch_energy_cost()
-        data["energy_usage"] = fetch_energy_usage()
         return data
 
 class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
