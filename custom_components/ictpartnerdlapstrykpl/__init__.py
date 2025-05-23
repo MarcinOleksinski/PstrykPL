@@ -1,5 +1,5 @@
 """
-ICTPartnerDlaPstryk.pl Home Assistant Integration
+ictpartnerdlapstrykpl Home Assistant Integration
 """
 
 import logging
