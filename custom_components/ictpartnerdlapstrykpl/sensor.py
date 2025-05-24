@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta, datetime
 import requests
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import ENERGY_KILO_WATT_HOUR, CURRENCY_ZLOTY
+
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, CoordinatorEntity
 from homeassistant.helpers.entity import EntityCategory
 from .const import DOMAIN, CONF_API_KEY, API_BASE_URL
@@ -14,12 +14,12 @@ SCAN_INTERVAL = timedelta(hours=1)
 SENSOR_TYPES = {
     "price_today": {
         "name": "Pstryk Price Today",
-        "unit": CURRENCY_ZLOTY + "/kWh",
+        "unit": "PLN/kWh",
         "icon": "mdi:currency-usd",
     },
     "price_tomorrow": {
         "name": "Pstryk Price Tomorrow",
-        "unit": CURRENCY_ZLOTY + "/kWh",
+        "unit": "PLN/kWh",
         "icon": "mdi:currency-usd",
     },
     "carbon_footprint": {
@@ -29,12 +29,12 @@ SENSOR_TYPES = {
     },
     "energy_cost": {
         "name": "Pstryk Energy Cost",
-        "unit": CURRENCY_ZLOTY,
+        "unit": "PLN",
         "icon": "mdi:cash",
     },
     "energy_usage": {
         "name": "Pstryk Energy Usage",
-        "unit": ENERGY_KILO_WATT_HOUR,
+        "unit": "kWh",
         "icon": "mdi:flash",
     },
 }
@@ -55,10 +55,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
         # 2. Hourly price sensors for today (example: 24h)
         *[PstrykHourlyPriceSensor(coordinator, hour) for hour in range(24)],
         # 3. Total value sensors
-        PstrykTotalSensor(coordinator, "fae_total_cost", "Pstryk Total Energy Cost", CURRENCY_ZLOTY, "mdi:cash-multiple"),
+        PstrykTotalSensor(coordinator, "fae_total_cost", "Pstryk Total Energy Cost", "PLN", "mdi:cash-multiple"),
         PstrykTotalSensor(coordinator, "carbon_footprint_total", "Pstryk Total Carbon Footprint", "gCO2eq", "mdi:cloud"),
-        PstrykTotalSensor(coordinator, "fae_total_usage", "Pstryk Total Energy Usage", ENERGY_KILO_WATT_HOUR, "mdi:flash"),
-        PstrykTotalSensor(coordinator, "total_energy_sold_value", "Pstryk Total Energy Sold", CURRENCY_ZLOTY, "mdi:transmission-tower-export"),
+        PstrykTotalSensor(coordinator, "fae_total_usage", "Pstryk Total Energy Usage", "kWh", "mdi:flash"),
+        PstrykTotalSensor(coordinator, "total_energy_sold_value", "Pstryk Total Energy Sold", "PLN", "mdi:transmission-tower-export"),
         # 4. Flag sensors
         PstrykFlagSensor(coordinator, "is_expensive_now", "Pstryk Is Expensive Now", "mdi:alert"),
         PstrykFlagSensor(coordinator, "is_cheap_now", "Pstryk Is Cheap Now", "mdi:tag"),
@@ -82,7 +82,7 @@ class PstrykProsumerPriceSensor(CoordinatorEntity, SensorEntity):
         self._sensor_type = sensor_type
         self._attr_name = f"Pstryk Prosumer Price {'Today' if 'today' in sensor_type else 'Tomorrow'}"
         self._attr_icon = "mdi:solar-power"
-        self._attr_native_unit_of_measurement = CURRENCY_ZLOTY + "/kWh"
+        self._attr_native_unit_of_measurement = "PLN/kWh"
         self._attr_unique_id = f"pstryk_{sensor_type}"
 
     @property
@@ -105,7 +105,7 @@ class PstrykHourlyPriceSensor(CoordinatorEntity, SensorEntity):
         self._hour = hour
         self._attr_name = f"Pstryk Price Hour {hour:02d}"
         self._attr_icon = "mdi:clock-time-four-outline"
-        self._attr_native_unit_of_measurement = CURRENCY_ZLOTY + "/kWh"
+        self._attr_native_unit_of_measurement = "PLN/kWh"
         self._attr_unique_id = f"pstryk_price_hour_{hour:02d}"
 
     @property
@@ -189,7 +189,7 @@ class PstrykAggregatedSensor(CoordinatorEntity, SensorEntity):
         self._resolution = resolution
         self._attr_name = f"Pstryk Price {resolution.capitalize()}"
         self._attr_icon = "mdi:calendar"
-        self._attr_native_unit_of_measurement = CURRENCY_ZLOTY + "/kWh"
+        self._attr_native_unit_of_measurement = "PLN/kWh"
         self._attr_unique_id = f"pstryk_price_{resolution}"
 
     @property
