@@ -37,9 +37,10 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             url = f"https://pstryk.pl/api/integrations/pricing/?resolution={resolution}&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
             return await fetch_json(url)
 
+
+        # carbon_footprint endpoint wyłączony na życzenie użytkownika
         async def fetch_carbon_footprint(resolution="hour"):
-            url = f"https://pstryk.pl/api/integrations/meter-data/carbon-footprint/?resolution={resolution}&window_start={today}T00:00:00Z"
-            return await fetch_json(url)
+            return {}
 
 
         # Helper to get window_end for a given resolution
@@ -60,8 +61,8 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             return start
 
         async def fetch_energy_cost(resolution="hour", start=None):
-            # Only hour, day, week, month supported for energy-cost
-            if resolution not in ("hour", "day", "week", "month"):
+            # Only hour, day, month supported for energy-cost
+            if resolution not in ("hour", "day", "month"):
                 return {}
             if start is None:
                 start = today
@@ -98,13 +99,15 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         data["price_day"] = await fetch_prices(today, resolution="day")
         data["price_month"] = await fetch_prices(today, resolution="month")
         data["price_year"] = await fetch_prices(today, resolution="year")
-        data["carbon_footprint"] = await fetch_carbon_footprint()
-        data["carbon_footprint_day"] = await fetch_carbon_footprint(resolution="day")
-        data["carbon_footprint_month"] = await fetch_carbon_footprint(resolution="month")
-        data["carbon_footprint_year"] = await fetch_carbon_footprint(resolution="year")
+        # carbon_footprint endpoint wyłączony
+        data["carbon_footprint"] = {}
+        data["carbon_footprint_day"] = {}
+        data["carbon_footprint_month"] = {}
+        data["carbon_footprint_year"] = {}
         data["energy_cost"] = await fetch_energy_cost(resolution="hour", start=today)
         data["energy_cost_day"] = await fetch_energy_cost(resolution="day", start=today)
-        data["energy_cost_week"] = await fetch_energy_cost(resolution="week", start=today)
+        # Nie ma agregacji tygodniowej dla energy-cost
+        data["energy_cost_week"] = {}
         data["energy_cost_month"] = await fetch_energy_cost(resolution="month", start=today)
         # No year aggregation for energy-cost
         data["energy_usage"] = await fetch_energy_usage(resolution="hour", start=today)
