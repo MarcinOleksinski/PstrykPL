@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta, datetime
-import requests
+import aiohttp
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.components.sensor import SensorEntity
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, CoordinatorEntity
@@ -294,7 +295,6 @@ class PstrykApiStatusSensor(CoordinatorEntity, SensorEntity):
     def extra_state_attributes(self):
         return {}
 
-class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, api_key):
         super().__init__(
             hass,
@@ -308,65 +308,66 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         today = datetime.utcnow().date()
         tomorrow = today + timedelta(days=1)
         headers = {"Authorization": f"Token {self.api_key}"}
-        # 1. Prosumer pricing
-        def fetch_prosumer_prices(day):
+        session = async_get_clientsession(self.hass)
+
+        async def fetch_json(url):
+            try:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
+            except Exception as e:
+                _LOGGER.error(f"Error fetching {url}: {e}")
+                return None
+
+        async def fetch_prosumer_prices(day):
             url = f"https://pstryk.pl/api/integrations/prosumer-pricing/?resolution=hour&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        # 2. Hourly/daily/monthly/yearly price/usage/cost/carbon
-        def fetch_prices(day, resolution="hour"):
+            return await fetch_json(url)
+
+        async def fetch_prices(day, resolution="hour"):
             url = f"https://pstryk.pl/api/integrations/pricing/?resolution={resolution}&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        def fetch_carbon_footprint(resolution="hour"):
+            return await fetch_json(url)
+
+        async def fetch_carbon_footprint(resolution="hour"):
             url = f"https://pstryk.pl/api/integrations/meter-data/carbon-footprint/?resolution={resolution}&window_start={today}T00:00:00Z"
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        def fetch_energy_cost(resolution="hour"):
+            return await fetch_json(url)
+
+        async def fetch_energy_cost(resolution="hour"):
             url = f"https://pstryk.pl/api/integrations/meter-data/energy-cost/?resolution={resolution}&window_start={today}T00:00:00Z"
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        def fetch_energy_usage(resolution="hour"):
+            return await fetch_json(url)
+
+        async def fetch_energy_usage(resolution="hour"):
             url = f"https://pstryk.pl/api/integrations/meter-data/energy-usage/?resolution={resolution}&window_start={today}T00:00:00Z"
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()
-            return resp.json()
-        # 3. Data for different timezones/meters (not implemented: use config)
-        # 4. Data for different meters (not implemented: use config)
-        # 5. Cost components, energy sold, balance, etc. are in frames
+            return await fetch_json(url)
+
         data = {}
         # Standard pricing
-        data["price_today"] = fetch_prices(today)
+        data["price_today"] = await fetch_prices(today)
         if datetime.utcnow().hour >= 14:
-            data["price_tomorrow"] = fetch_prices(tomorrow)
+            data["price_tomorrow"] = await fetch_prices(tomorrow)
         else:
             data["price_tomorrow"] = None
         # Prosumer pricing
-        data["prosumer_price_today"] = fetch_prosumer_prices(today)
+        data["prosumer_price_today"] = await fetch_prosumer_prices(today)
         if datetime.utcnow().hour >= 14:
-            data["prosumer_price_tomorrow"] = fetch_prosumer_prices(tomorrow)
+            data["prosumer_price_tomorrow"] = await fetch_prosumer_prices(tomorrow)
         else:
             data["prosumer_price_tomorrow"] = None
         # Aggregates
-        data["price_day"] = fetch_prices(today, resolution="day")
-        data["price_month"] = fetch_prices(today, resolution="month")
-        data["price_year"] = fetch_prices(today, resolution="year")
-        data["carbon_footprint"] = fetch_carbon_footprint()
-        data["carbon_footprint_day"] = fetch_carbon_footprint(resolution="day")
-        data["carbon_footprint_month"] = fetch_carbon_footprint(resolution="month")
-        data["carbon_footprint_year"] = fetch_carbon_footprint(resolution="year")
-        data["energy_cost"] = fetch_energy_cost()
-        data["energy_cost_day"] = fetch_energy_cost(resolution="day")
-        data["energy_cost_month"] = fetch_energy_cost(resolution="month")
-        data["energy_cost_year"] = fetch_energy_cost(resolution="year")
-        data["energy_usage"] = fetch_energy_usage()
-        data["energy_usage_day"] = fetch_energy_usage(resolution="day")
-        data["energy_usage_month"] = fetch_energy_usage(resolution="month")
-        data["energy_usage_year"] = fetch_energy_usage(resolution="year")
+        data["price_day"] = await fetch_prices(today, resolution="day")
+        data["price_month"] = await fetch_prices(today, resolution="month")
+        data["price_year"] = await fetch_prices(today, resolution="year")
+        data["carbon_footprint"] = await fetch_carbon_footprint()
+        data["carbon_footprint_day"] = await fetch_carbon_footprint(resolution="day")
+        data["carbon_footprint_month"] = await fetch_carbon_footprint(resolution="month")
+        data["carbon_footprint_year"] = await fetch_carbon_footprint(resolution="year")
+        data["energy_cost"] = await fetch_energy_cost()
+        data["energy_cost_day"] = await fetch_energy_cost(resolution="day")
+        data["energy_cost_month"] = await fetch_energy_cost(resolution="month")
+        data["energy_cost_year"] = await fetch_energy_cost(resolution="year")
+        data["energy_usage"] = await fetch_energy_usage()
+        data["energy_usage_day"] = await fetch_energy_usage(resolution="day")
+        data["energy_usage_month"] = await fetch_energy_usage(resolution="month")
+        data["energy_usage_year"] = await fetch_energy_usage(resolution="year")
         return data
 
 class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
