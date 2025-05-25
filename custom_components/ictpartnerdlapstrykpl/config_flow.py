@@ -1,22 +1,21 @@
-class ICTPartnerDlaPstrykOptionsFlowHandler(config_entries.OptionsFlow):
+
+# Poprawny handler dla options flow:
+class ICTPartnerDlaPstrykOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry):
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
         errors = {}
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-
-        # Use current config as defaults
-        data = self.config_entry.data
-        options = self.config_entry.options
+        data = {**self.config_entry.data, **self.config_entry.options}
         schema = vol.Schema({
             vol.Required(CONF_API_KEY, default=data.get(CONF_API_KEY, "")): str,
             vol.Optional(CONF_METERS, default=data.get(CONF_METERS, "main")): str,
             vol.Optional(CONF_TIMEZONE, default=data.get(CONF_TIMEZONE, "Europe/Warsaw")): str,
-            vol.Optional(CONF_ALERT_PRICE, default=options.get(CONF_ALERT_PRICE, data.get(CONF_ALERT_PRICE, 1.0))): vol.Coerce(float),
-            vol.Optional(CONF_ALERT_USAGE, default=options.get(CONF_ALERT_USAGE, data.get(CONF_ALERT_USAGE, 10.0))): vol.Coerce(float),
+            vol.Optional(CONF_ALERT_PRICE, default=data.get(CONF_ALERT_PRICE, 1.0)): vol.Coerce(float),
+            vol.Optional(CONF_ALERT_USAGE, default=data.get(CONF_ALERT_USAGE, 10.0)): vol.Coerce(float),
         })
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
 import voluptuous as vol
 from homeassistant import config_entries
@@ -31,7 +30,7 @@ class ICTPartnerDlaPstrykConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return ICTPartnerDlaPstrykOptionsFlowHandler(config_entry)
+        return ICTPartnerDlaPstrykOptionsFlow(config_entry)
     """Handle a config flow for ictpartnerdlapstrykpl."""
 
     VERSION = 1
