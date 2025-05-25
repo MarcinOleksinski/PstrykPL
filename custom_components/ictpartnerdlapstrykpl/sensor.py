@@ -21,13 +21,22 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         async def fetch_json(url):
             try:
                 async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 404:
+                        _LOGGER.info(f"Pstryk API 404 Not Found for {url} (endpoint or data not available)")
+                        return {}
                     resp.raise_for_status()
                     data = await resp.json()
                     _LOGGER.debug(f"Pstryk API response for {url}: {data}")
                     return data
+            except aiohttp.ClientResponseError as e:
+                if e.status == 404:
+                    _LOGGER.info(f"Pstryk API 404 Not Found for {url} (endpoint or data not available)")
+                    return {}
+                _LOGGER.warning(f"Error fetching {url}: {e}")
+                return {}
             except Exception as e:
-                _LOGGER.error(f"Error fetching {url}: {e}")
-                return None
+                _LOGGER.warning(f"Error fetching {url}: {e}")
+                return {}
 
         async def fetch_prosumer_prices(day):
             url = f"https://pstryk.pl/api/integrations/prosumer-pricing/?resolution=hour&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
