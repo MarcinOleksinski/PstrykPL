@@ -1,7 +1,4 @@
 
-# Poprawny handler dla options flow:
-
-
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_API_KEY
@@ -26,9 +23,7 @@ class ICTPartnerDlaPstrykOptionsFlow(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=user_input)
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
 
-
 class ICTPartnerDlaPstrykConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
@@ -47,7 +42,6 @@ class ICTPartnerDlaPstrykConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(CONF_ALERT_USAGE, default=10.0): vol.Coerce(float),
         })
         if user_input is not None:
-            # Validate API key, meters, etc. (optionally, do a test request here)
             return self.async_create_entry(title="ictpartnerdlapstrykpl", data=user_input)
         return self.async_show_form(
             step_id="user",
