@@ -39,11 +39,16 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
                 return {}
 
         async def fetch_prosumer_prices(day):
-            url = f"https://pstryk.pl/api/integrations/prosumer-pricing/?resolution=hour&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
+            # Buduj URL zawsze z ukośnikiem przed znakiem zapytania
+            base = "https://pstryk.pl/api/integrations/prosumer-pricing/"
+            params = f"resolution=hour&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
+            url = f"{base}?{params}"
             return await fetch_json(url)
 
         async def fetch_prices(day, resolution="hour"):
-            url = f"https://pstryk.pl/api/integrations/pricing/?resolution={resolution}&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
+            base = "https://pstryk.pl/api/integrations/pricing/"
+            params = f"resolution={resolution}&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
+            url = f"{base}?{params}"
             return await fetch_json(url)
 
 
