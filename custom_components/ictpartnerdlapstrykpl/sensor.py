@@ -15,7 +15,7 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         today = datetime.utcnow().date()
         tomorrow = today + timedelta(days=1)
-        headers = {"Authorization": f"Token {self.api_key}"}
+        headers = {"Authorization": self.api_key}
         session = async_get_clientsession(self.hass)
 
         async def fetch_json(url):
