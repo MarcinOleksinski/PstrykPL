@@ -38,7 +38,7 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             return await fetch_json(url)
 
 
-        # carbon_footprint endpoint wyłączony na życzenie użytkownika
+        # carbon_footprint endpoint wyłączony 
         async def fetch_carbon_footprint(resolution="hour"):
             return {}
 
