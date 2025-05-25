@@ -41,12 +41,44 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             url = f"https://pstryk.pl/api/integrations/meter-data/carbon-footprint/?resolution={resolution}&window_start={today}T00:00:00Z"
             return await fetch_json(url)
 
-        async def fetch_energy_cost(resolution="hour"):
-            url = f"https://pstryk.pl/api/integrations/meter-data/energy-cost/?resolution={resolution}&window_start={today}T00:00:00Z"
+
+        # Helper to get window_end for a given resolution
+        def get_window_end(start, resolution):
+            if resolution == "hour" or resolution == "day":
+                return start
+            elif resolution == "week":
+                # End of week (Sunday)
+                return (start + timedelta(days=(6 - start.weekday())))
+            elif resolution == "month":
+                # End of month
+                if start.month == 12:
+                    return start.replace(year=start.year+1, month=1, day=1) - timedelta(days=1)
+                else:
+                    return start.replace(month=start.month+1, day=1) - timedelta(days=1)
+            elif resolution == "year":
+                return start.replace(month=12, day=31)
+            return start
+
+        async def fetch_energy_cost(resolution="hour", start=None):
+            # Only hour, day, week, month supported for energy-cost
+            if resolution not in ("hour", "day", "week", "month"):
+                return {}
+            if start is None:
+                start = today
+            window_start = f"{start}T00:00:00Z"
+            window_end = get_window_end(start, resolution)
+            window_end = f"{window_end}T23:59:59Z"
+            url = f"https://api.pstryk.pl/integrations/meter-data/energy-cost/?resolution={resolution}&window_start={window_start}&window_end={window_end}"
             return await fetch_json(url)
 
-        async def fetch_energy_usage(resolution="hour"):
-            url = f"https://pstryk.pl/api/integrations/meter-data/energy-usage/?resolution={resolution}&window_start={today}T00:00:00Z"
+        async def fetch_energy_usage(resolution="hour", start=None):
+            # All resolutions supported for energy-usage
+            if start is None:
+                start = today
+            window_start = f"{start}T00:00:00Z"
+            window_end = get_window_end(start, resolution)
+            window_end = f"{window_end}T23:59:59Z"
+            url = f"https://api.pstryk.pl/integrations/meter-data/energy-usage/?resolution={resolution}&window_start={window_start}&window_end={window_end}"
             return await fetch_json(url)
 
         data = {}
@@ -70,14 +102,16 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         data["carbon_footprint_day"] = await fetch_carbon_footprint(resolution="day")
         data["carbon_footprint_month"] = await fetch_carbon_footprint(resolution="month")
         data["carbon_footprint_year"] = await fetch_carbon_footprint(resolution="year")
-        data["energy_cost"] = await fetch_energy_cost()
-        data["energy_cost_day"] = await fetch_energy_cost(resolution="day")
-        data["energy_cost_month"] = await fetch_energy_cost(resolution="month")
-        data["energy_cost_year"] = await fetch_energy_cost(resolution="year")
-        data["energy_usage"] = await fetch_energy_usage()
-        data["energy_usage_day"] = await fetch_energy_usage(resolution="day")
-        data["energy_usage_month"] = await fetch_energy_usage(resolution="month")
-        data["energy_usage_year"] = await fetch_energy_usage(resolution="year")
+        data["energy_cost"] = await fetch_energy_cost(resolution="hour", start=today)
+        data["energy_cost_day"] = await fetch_energy_cost(resolution="day", start=today)
+        data["energy_cost_week"] = await fetch_energy_cost(resolution="week", start=today)
+        data["energy_cost_month"] = await fetch_energy_cost(resolution="month", start=today)
+        # No year aggregation for energy-cost
+        data["energy_usage"] = await fetch_energy_usage(resolution="hour", start=today)
+        data["energy_usage_day"] = await fetch_energy_usage(resolution="day", start=today)
+        data["energy_usage_week"] = await fetch_energy_usage(resolution="week", start=today)
+        data["energy_usage_month"] = await fetch_energy_usage(resolution="month", start=today)
+        data["energy_usage_year"] = await fetch_energy_usage(resolution="year", start=today)
         return data
 import logging
 from datetime import timedelta, datetime
