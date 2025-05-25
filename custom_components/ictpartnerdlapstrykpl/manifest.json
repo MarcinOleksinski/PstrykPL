@@ -1,7 +1,7 @@
 {
   "domain": "ictpartnerdlapstrykpl",
   "name": "ICTPartnerDlaPstryk.pl",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "documentation": "https://github.com/MarcinOleksinski/PstrykPL",
   "issue_tracker": "https://github.com/MarcinOleksinski/PstrykPL/issues",
   "requirements": ["requests>=2.31.0"],
