@@ -22,7 +22,9 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             try:
                 async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     resp.raise_for_status()
-                    return await resp.json()
+                    data = await resp.json()
+                    _LOGGER.debug(f"Pstryk API response for {url}: {data}")
+                    return data
             except Exception as e:
                 _LOGGER.error(f"Error fetching {url}: {e}")
                 return None
@@ -165,14 +167,21 @@ class PstrykProsumerPriceSensor(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = "PLN/kWh"
         self._attr_unique_id = f"pstryk_{sensor_type}"
 
+
     @property
     def available(self):
-        # Placeholder: implement real data fetch for prosumer
-        return False
+        data = self.coordinator.data.get(self._sensor_type)
+        return data is not None and data.get("frames") is not None
 
     @property
     def native_value(self):
-        # Placeholder: implement real data fetch for prosumer
+        data = self.coordinator.data.get(self._sensor_type)
+        if not data or not data.get("frames"):
+            return None
+        now = datetime.utcnow().hour
+        frames = data["frames"]
+        if now < len(frames):
+            return frames[now].get("price_gross_avg")
         return None
 
     @property
@@ -272,15 +281,21 @@ class PstrykAggregatedSensor(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = "PLN/kWh"
         self._attr_unique_id = f"pstryk_price_{resolution}"
 
+
     @property
     def available(self):
-        # Placeholder: implement real data fetch for other resolutions
-        return False
+        key = f"price_{self._resolution}"
+        data = self.coordinator.data.get(key)
+        return data is not None and (data.get("price_gross_avg") is not None or data.get("frames") is not None)
 
     @property
     def native_value(self):
-        # Placeholder: implement real data fetch for other resolutions
-        return None
+        key = f"price_{self._resolution}"
+        data = self.coordinator.data.get(key)
+        if not data:
+            return None
+        # Prefer price_gross_avg if available, else None
+        return data.get("price_gross_avg")
 
     @property
     def extra_state_attributes(self):
@@ -388,9 +403,13 @@ class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         data = self.coordinator.data.get(self._sensor_type)
-        if not data:
+        if not data or not data.get("frames"):
             return None
-        return [frame.get("price_gross_avg") for frame in data.get("frames", [])]
+        now = datetime.utcnow().hour
+        frames = data["frames"]
+        if now < len(frames):
+            return frames[now].get("price_gross_avg")
+        return None
 
     @property
     def extra_state_attributes(self):

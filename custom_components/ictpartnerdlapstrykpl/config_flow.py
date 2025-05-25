@@ -16,8 +16,8 @@ class ICTPartnerDlaPstrykConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_API_KEY): str,
             vol.Optional(CONF_METERS, default="main"): str,
             vol.Optional(CONF_TIMEZONE, default="Europe/Warsaw"): str,
-            vol.Optional(CONF_ALERT_PRICE, default=1.0): float,
-            vol.Optional(CONF_ALERT_USAGE, default=10.0): float,
+            vol.Optional(CONF_ALERT_PRICE, default=1.0): vol.Coerce(float),
+            vol.Optional(CONF_ALERT_USAGE, default=10.0): vol.Coerce(float),
         })
         if user_input is not None:
             # Validate API key, meters, etc. (optionally, do a test request here)
