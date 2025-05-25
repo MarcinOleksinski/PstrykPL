@@ -1,5 +1,13 @@
 
 # Poprawny handler dla options flow:
+
+
+import voluptuous as vol
+from homeassistant import config_entries
+from homeassistant.const import CONF_API_KEY
+from homeassistant.core import callback
+from .const import DOMAIN, CONF_METERS, CONF_TIMEZONE, CONF_ALERT_PRICE, CONF_ALERT_USAGE
+
 class ICTPartnerDlaPstrykOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry):
         self.config_entry = config_entry
@@ -17,21 +25,14 @@ class ICTPartnerDlaPstrykOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
-import voluptuous as vol
-from homeassistant import config_entries
-from homeassistant.const import CONF_API_KEY
-from homeassistant.core import callback
-from .const import DOMAIN, CONF_API_KEY, CONF_METERS, CONF_TIMEZONE, CONF_ALERT_PRICE, CONF_ALERT_USAGE
+
 
 class ICTPartnerDlaPstrykConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    def __init__(self):
-        super().__init__()
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
         return ICTPartnerDlaPstrykOptionsFlow(config_entry)
-    """Handle a config flow for ictpartnerdlapstrykpl."""
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
