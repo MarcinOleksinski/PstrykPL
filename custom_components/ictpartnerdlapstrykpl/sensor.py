@@ -371,34 +371,6 @@ class PstrykApiStatusSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return {}
-        data["price_today"] = await fetch_prices(today)
-        if datetime.utcnow().hour >= 14:
-            data["price_tomorrow"] = await fetch_prices(tomorrow)
-        else:
-            data["price_tomorrow"] = None
-        # Prosumer pricing
-        data["prosumer_price_today"] = await fetch_prosumer_prices(today)
-        if datetime.utcnow().hour >= 14:
-            data["prosumer_price_tomorrow"] = await fetch_prosumer_prices(tomorrow)
-        else:
-            data["prosumer_price_tomorrow"] = None
-        # Aggregates
-        data["price_day"] = await fetch_prices(today, resolution="day")
-        data["price_month"] = await fetch_prices(today, resolution="month")
-        data["price_year"] = await fetch_prices(today, resolution="year")
-        data["carbon_footprint"] = await fetch_carbon_footprint()
-        data["carbon_footprint_day"] = await fetch_carbon_footprint(resolution="day")
-        data["carbon_footprint_month"] = await fetch_carbon_footprint(resolution="month")
-        data["carbon_footprint_year"] = await fetch_carbon_footprint(resolution="year")
-        data["energy_cost"] = await fetch_energy_cost()
-        data["energy_cost_day"] = await fetch_energy_cost(resolution="day")
-        data["energy_cost_month"] = await fetch_energy_cost(resolution="month")
-        data["energy_cost_year"] = await fetch_energy_cost(resolution="year")
-        data["energy_usage"] = await fetch_energy_usage()
-        data["energy_usage_day"] = await fetch_energy_usage(resolution="day")
-        data["energy_usage_month"] = await fetch_energy_usage(resolution="month")
-        data["energy_usage_year"] = await fetch_energy_usage(resolution="year")
-        return data
 
 class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, sensor_type):
