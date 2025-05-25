@@ -361,64 +361,15 @@ class PstrykApiStatusSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def available(self):
-        # Always available
         return True
 
     @property
     def native_value(self):
-        # Example: always online if last update succeeded
         return "online"
 
     @property
     def extra_state_attributes(self):
         return {}
-
-    def __init__(self, hass, api_key):
-        super().__init__(
-            hass,
-            _LOGGER,
-            name="Pstryk Data",
-            update_interval=SCAN_INTERVAL,
-        )
-        self.api_key = api_key
-
-    async def _async_update_data(self):
-        today = datetime.utcnow().date()
-        tomorrow = today + timedelta(days=1)
-        headers = {"Authorization": f"Token {self.api_key}"}
-        session = async_get_clientsession(self.hass)
-
-        async def fetch_json(url):
-            try:
-                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                    resp.raise_for_status()
-                    return await resp.json()
-            except Exception as e:
-                _LOGGER.error(f"Error fetching {url}: {e}")
-                return None
-
-        async def fetch_prosumer_prices(day):
-            url = f"https://pstryk.pl/api/integrations/prosumer-pricing/?resolution=hour&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
-            return await fetch_json(url)
-
-        async def fetch_prices(day, resolution="hour"):
-            url = f"https://pstryk.pl/api/integrations/pricing/?resolution={resolution}&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
-            return await fetch_json(url)
-
-        async def fetch_carbon_footprint(resolution="hour"):
-            url = f"https://pstryk.pl/api/integrations/meter-data/carbon-footprint/?resolution={resolution}&window_start={today}T00:00:00Z"
-            return await fetch_json(url)
-
-        async def fetch_energy_cost(resolution="hour"):
-            url = f"https://pstryk.pl/api/integrations/meter-data/energy-cost/?resolution={resolution}&window_start={today}T00:00:00Z"
-            return await fetch_json(url)
-
-        async def fetch_energy_usage(resolution="hour"):
-            url = f"https://pstryk.pl/api/integrations/meter-data/energy-usage/?resolution={resolution}&window_start={today}T00:00:00Z"
-            return await fetch_json(url)
-
-        data = {}
-        # Standard pricing
         data["price_today"] = await fetch_prices(today)
         if datetime.utcnow().hour >= 14:
             data["price_tomorrow"] = await fetch_prices(tomorrow)
