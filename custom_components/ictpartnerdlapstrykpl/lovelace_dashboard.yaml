@@ -1,3 +1,21 @@
+      # 6. Informacja o dostępności danych na jutro
+      - type: conditional
+        conditions:
+          - entity: sensor.pstryk_price_tomorrow
+            state_not: unavailable
+        card:
+          type: entity
+          entity: sensor.pstryk_price_tomorrow
+          name: "Ceny energii na jutro (dostępne)"
+      - type: conditional
+        conditions:
+          - entity: sensor.pstryk_price_tomorrow
+            state: unavailable
+        card:
+          type: markdown
+          content: |
+            **Ceny energii na jutro nie są jeszcze dostępne.**\
+            Sprawdź ponownie po godzinie 14:00 lub gdy pojawią się dane w API Pstryk.
 # Przykładowy dashboard Lovelace dla integracji ICTPartnerDlaPstryk.pl
 views:
   - title: Pstryk Energia
@@ -95,4 +113,4 @@ views:
           - sensor.pstryk_prosumer_price_hour_22
           - sensor.pstryk_prosumer_price_hour_23
         hours_to_show: 24
-        refresh_interval: 60
+        refresh_interval: 1

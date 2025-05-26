@@ -144,10 +144,8 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         # a pojawiają się dane dla price_tomorrow. To nie jest błąd integracji.
         data["price_today"] = await fetch_prices(today, resolution="hour")
         _LOGGER.warning(f"[PSTRYK DEBUG] price_today result: {data['price_today']}")
-        if datetime.utcnow().hour >= 14:
-            data["price_tomorrow"] = await fetch_prices(tomorrow, resolution="hour")
-        else:
-            data["price_tomorrow"] = None
+        # Pobieraj price_tomorrow zawsze, niezależnie od godziny
+        data["price_tomorrow"] = await fetch_prices(tomorrow, resolution="hour")
         # Prosumer pricing
         data["prosumer_price_today"] = await fetch_prosumer_prices(today)
         if datetime.utcnow().hour >= 14:
@@ -533,7 +531,8 @@ class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def available(self):
-        return self.coordinator.data.get(self._sensor_type) is not None
+        # Encja zawsze dostępna, nawet jeśli nie ma jeszcze danych (frames)
+        return True
 
     @property
     def native_value(self):
