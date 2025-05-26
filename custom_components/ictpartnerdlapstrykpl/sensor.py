@@ -46,8 +46,23 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             return await fetch_json(url)
 
         async def fetch_prices(day, resolution="hour"):
-            base = "https://pstryk.pl/api/integrations/pricing/"
-            params = f"resolution={resolution}&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
+            # Poprawny endpoint: https://api.pstryk.pl/pricing/?resolution=hour&window_start=YYYY-MM-DDT00:00:00Z&window_end=YYYY-MM-DDT23:59:59Z&for_tz=Europe/Warsaw
+            base = "https://api.pstryk.pl/pricing/"
+            # Pobierz strefę czasową z config entry (jeśli dostępna)
+            timezone = None
+            try:
+                for entry in self.hass.config_entries.async_entries(DOMAIN):
+                    if entry.data.get("for_tz"):
+                        timezone = entry.data["for_tz"]
+                        break
+                    if entry.options.get("for_tz"):
+                        timezone = entry.options["for_tz"]
+                        break
+            except Exception:
+                pass
+            if not timezone:
+                timezone = "Europe/Warsaw"
+            params = f"resolution={resolution}&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z&for_tz={timezone}"
             url = f"{base}?{params}"
             return await fetch_json(url)
 
@@ -98,9 +113,11 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
 
         data = {}
         # Standard pricing
-        data["price_today"] = await fetch_prices(today)
+        # Ustal okno czasowe dla agregacji (window_start, window_end)
+        # Dla day/month/year window_start to pierwszy dzień okresu
+        data["price_today"] = await fetch_prices(today, resolution="hour")
         if datetime.utcnow().hour >= 14:
-            data["price_tomorrow"] = await fetch_prices(tomorrow)
+            data["price_tomorrow"] = await fetch_prices(tomorrow, resolution="hour")
         else:
             data["price_tomorrow"] = None
         # Prosumer pricing
@@ -109,10 +126,15 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             data["prosumer_price_tomorrow"] = await fetch_prosumer_prices(tomorrow)
         else:
             data["prosumer_price_tomorrow"] = None
-        # Aggregates
+        # Aggregaty pricing
+        # Dzień
         data["price_day"] = await fetch_prices(today, resolution="day")
-        data["price_month"] = await fetch_prices(today, resolution="month")
-        data["price_year"] = await fetch_prices(today, resolution="year")
+        # Miesiąc
+        first_of_month = today.replace(day=1)
+        data["price_month"] = await fetch_prices(first_of_month, resolution="month")
+        # Rok
+        first_of_year = today.replace(month=1, day=1)
+        data["price_year"] = await fetch_prices(first_of_year, resolution="year")
         # carbon_footprint endpoint wyłączony
         data["carbon_footprint"] = {}
         data["carbon_footprint_day"] = {}
