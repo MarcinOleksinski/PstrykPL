@@ -503,34 +503,7 @@ class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
             "price_gross_avg": data.get("price_gross_avg"),
         }
 
-class PstrykCarbonFootprintSensor(CoordinatorEntity, SensorEntity):
-    def __init__(self, coordinator):
-        super().__init__(coordinator)
-        self._attr_name = SENSOR_TYPES["carbon_footprint"]["name"]
-        self._attr_icon = SENSOR_TYPES["carbon_footprint"]["icon"]
-        self._attr_native_unit_of_measurement = SENSOR_TYPES["carbon_footprint"]["unit"]
-        self._attr_unique_id = "pstryk_carbon_footprint"
-
-    @property
-    def available(self):
-        return self.coordinator.data.get("carbon_footprint") is not None
-
-    @property
-    def native_value(self):
-        data = self.coordinator.data.get("carbon_footprint")
-        if not data:
-            return None
-        return data.get("carbon_footprint_total")
-
-    @property
-    def extra_state_attributes(self):
-        data = self.coordinator.data.get("carbon_footprint")
-        if not data:
-            return {}
-        return {
-            "frames": data.get("frames", []),
-            "resolution": data.get("resolution"),
-        }
+# Usunięto klasę PstrykCarbonFootprintSensor - endpoint nieobsługiwany przez API
 
 class PstrykEnergyCostSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator):
