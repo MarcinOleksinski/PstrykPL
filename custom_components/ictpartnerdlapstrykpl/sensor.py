@@ -430,21 +430,15 @@ class PstrykInfoSensor(CoordinatorEntity, SensorEntity):
         if self._key == "last_update":
             return datetime.utcnow().isoformat()
         if self._key == "integration_version":
-            # Try to read version from version file, fallback to manifest.json
             import os
             import json
             try:
-                version_path = os.path.join(os.path.dirname(__file__), "version")
-                with open(version_path, "r") as f:
-                    return f.read().strip()
+                manifest_path = os.path.join(os.path.dirname(__file__), "manifest.json")
+                with open(manifest_path, "r") as f:
+                    manifest = json.load(f)
+                    return manifest.get("version")
             except Exception:
-                try:
-                    manifest_path = os.path.join(os.path.dirname(__file__), "manifest.json")
-                    with open(manifest_path, "r") as f:
-                        manifest = json.load(f)
-                        return manifest.get("version")
-                except Exception:
-                    return None
+                return None
         return None
 
     @property
