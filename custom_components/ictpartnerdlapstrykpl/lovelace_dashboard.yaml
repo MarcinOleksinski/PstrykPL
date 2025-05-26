@@ -17,31 +17,52 @@ views:
       - type: glance
         title: Cena zakupu energii (poprzednia, bieżąca, następna godzina)
         entities:
-          - entity: sensor.pstryk_price_hour_{{ (now().hour - 1) % 24 | string | zfill(2) }}
+          - entity: sensor.pstryk_price_hour_{{prev_hour}}
             name: Poprzednia godzina
-          - entity: sensor.pstryk_price_hour_{{ now().hour | string | zfill(2) }}
+          - entity: sensor.pstryk_price_hour_{{curr_hour}}
             name: Bieżąca godzina
-          - entity: sensor.pstryk_price_hour_{{ (now().hour + 1) % 24 | string | zfill(2) }}
+          - entity: sensor.pstryk_price_hour_{{next_hour}}
             name: Następna godzina
 
       # 3. Cena sprzedaży: godzina wcześniej, bieżąca, za godzinę
       - type: glance
         title: Cena sprzedaży energii (poprzednia, bieżąca, następna godzina)
         entities:
-          - entity: sensor.pstryk_prosumer_price_hour_{{ (now().hour - 1) % 24 | string | zfill(2) }}
+          - entity: sensor.pstryk_prosumer_price_hour_22
             name: Poprzednia godzina
-          - entity: sensor.pstryk_prosumer_price_hour_{{ now().hour | string | zfill(2) }}
+          - entity: sensor.pstryk_prosumer_price_hour_23
             name: Bieżąca godzina
-          - entity: sensor.pstryk_prosumer_price_hour_{{ (now().hour + 1) % 24 | string | zfill(2) }}
+          - entity: sensor.pstryk_prosumer_price_hour_00
             name: Następna godzina
 
       # 4. Ceny zakupu energii 00-23
       - type: history-graph
         title: Ceny zakupu energii (00-23)
         entities:
-          {% for h in range(24) %}
-          - sensor.pstryk_price_hour_{{ '%02d' % h }}
-          {% endfor %}
+          - sensor.pstryk_price_hour_00
+          - sensor.pstryk_price_hour_01
+          - sensor.pstryk_price_hour_02
+          - sensor.pstryk_price_hour_03
+          - sensor.pstryk_price_hour_04
+          - sensor.pstryk_price_hour_05
+          - sensor.pstryk_price_hour_06
+          - sensor.pstryk_price_hour_07
+          - sensor.pstryk_price_hour_08
+          - sensor.pstryk_price_hour_09
+          - sensor.pstryk_price_hour_10
+          - sensor.pstryk_price_hour_11
+          - sensor.pstryk_price_hour_12
+          - sensor.pstryk_price_hour_13
+          - sensor.pstryk_price_hour_14
+          - sensor.pstryk_price_hour_15
+          - sensor.pstryk_price_hour_16
+          - sensor.pstryk_price_hour_17
+          - sensor.pstryk_price_hour_18
+          - sensor.pstryk_price_hour_19
+          - sensor.pstryk_price_hour_20
+          - sensor.pstryk_price_hour_21
+          - sensor.pstryk_price_hour_22
+          - sensor.pstryk_price_hour_23
         hours_to_show: 24
         refresh_interval: 60
 
@@ -49,8 +70,29 @@ views:
       - type: history-graph
         title: Ceny sprzedaży energii (00-23)
         entities:
-          {% for h in range(24) %}
-          - sensor.pstryk_prosumer_price_hour_{{ '%02d' % h }}
-          {% endfor %}
+          - sensor.pstryk_prosumer_price_hour_00
+          - sensor.pstryk_prosumer_price_hour_01
+          - sensor.pstryk_prosumer_price_hour_02
+          - sensor.pstryk_prosumer_price_hour_03
+          - sensor.pstryk_prosumer_price_hour_04
+          - sensor.pstryk_prosumer_price_hour_05
+          - sensor.pstryk_prosumer_price_hour_06
+          - sensor.pstryk_prosumer_price_hour_07
+          - sensor.pstryk_prosumer_price_hour_08
+          - sensor.pstryk_prosumer_price_hour_09
+          - sensor.pstryk_prosumer_price_hour_10
+          - sensor.pstryk_prosumer_price_hour_11
+          - sensor.pstryk_prosumer_price_hour_12
+          - sensor.pstryk_prosumer_price_hour_13
+          - sensor.pstryk_prosumer_price_hour_14
+          - sensor.pstryk_prosumer_price_hour_15
+          - sensor.pstryk_prosumer_price_hour_16
+          - sensor.pstryk_prosumer_price_hour_17
+          - sensor.pstryk_prosumer_price_hour_18
+          - sensor.pstryk_prosumer_price_hour_19
+          - sensor.pstryk_prosumer_price_hour_20
+          - sensor.pstryk_prosumer_price_hour_21
+          - sensor.pstryk_prosumer_price_hour_22
+          - sensor.pstryk_prosumer_price_hour_23
         hours_to_show: 24
         refresh_interval: 60
