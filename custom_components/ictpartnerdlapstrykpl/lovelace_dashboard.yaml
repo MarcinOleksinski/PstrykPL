@@ -4,46 +4,53 @@ views:
     path: pstryk
     icon: mdi:flash
     cards:
+      # 1. Średnie ceny dziś: zakup i sprzedaż
       - type: entities
-        title: Podsumowanie
+        title: Średnie ceny energii (dzisiaj)
         entities:
-          - sensor.pstryk_total_energy_cost
-          - sensor.pstryk_total_carbon_footprint
-          - sensor.pstryk_total_energy_usage
-          - sensor.pstryk_total_energy_sold
+          - entity: sensor.pstryk_price_today
+            name: Średnia cena zakupu (PLN/kWh)
+          - entity: sensor.pstryk_prosumer_price_today
+            name: Średnia cena sprzedaży (PLN/kWh)
+
+      # 2. Cena zakupu: godzina wcześniej, bieżąca, za godzinę
+      - type: glance
+        title: Cena zakupu energii (poprzednia, bieżąca, następna godzina)
+        entities:
+          - entity: sensor.pstryk_price_hour_{{ (now().hour - 1) % 24 | string | zfill(2) }}
+            name: Poprzednia godzina
+          - entity: sensor.pstryk_price_hour_{{ now().hour | string | zfill(2) }}
+            name: Bieżąca godzina
+          - entity: sensor.pstryk_price_hour_{{ (now().hour + 1) % 24 | string | zfill(2) }}
+            name: Następna godzina
+
+      # 3. Cena sprzedaży: godzina wcześniej, bieżąca, za godzinę
+      - type: glance
+        title: Cena sprzedaży energii (poprzednia, bieżąca, następna godzina)
+        entities:
+          - entity: sensor.pstryk_prosumer_price_hour_{{ (now().hour - 1) % 24 | string | zfill(2) }}
+            name: Poprzednia godzina
+          - entity: sensor.pstryk_prosumer_price_hour_{{ now().hour | string | zfill(2) }}
+            name: Bieżąca godzina
+          - entity: sensor.pstryk_prosumer_price_hour_{{ (now().hour + 1) % 24 | string | zfill(2) }}
+            name: Następna godzina
+
+      # 4. Ceny zakupu energii 00-23
       - type: history-graph
-        title: Ceny energii (dzisiaj)
+        title: Ceny zakupu energii (00-23)
         entities:
-          - sensor.pstryk_price_today
+          {% for h in range(24) %}
+          - sensor.pstryk_price_hour_{{ '%02d' % h }}
+          {% endfor %}
         hours_to_show: 24
         refresh_interval: 60
+
+      # 5. Ceny sprzedaży energii 00-23
       - type: history-graph
-        title: Ceny energii (jutro)
+        title: Ceny sprzedaży energii (00-23)
         entities:
-          - sensor.pstryk_price_tomorrow
+          {% for h in range(24) %}
+          - sensor.pstryk_prosumer_price_hour_{{ '%02d' % h }}
+          {% endfor %}
         hours_to_show: 24
         refresh_interval: 60
-      - type: history-graph
-        title: Ślad węglowy (dzisiaj)
-        entities:
-          - sensor.pstryk_carbon_footprint
-        hours_to_show: 24
-        refresh_interval: 60
-      - type: history-graph
-        title: Koszt energii (dzisiaj)
-        entities:
-          - sensor.pstryk_energy_cost
-        hours_to_show: 24
-        refresh_interval: 60
-      - type: history-graph
-        title: Zużycie energii (dzisiaj)
-        entities:
-          - sensor.pstryk_energy_usage
-        hours_to_show: 24
-        refresh_interval: 60
-      - type: entities
-        title: Alerty
-        entities:
-          - sensor.pstryk_is_expensive_now
-          - sensor.pstryk_is_cheap_now
-          - sensor.pstryk_is_live
