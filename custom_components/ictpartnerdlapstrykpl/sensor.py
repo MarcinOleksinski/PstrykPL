@@ -147,11 +147,9 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         # Pobieraj price_tomorrow zawsze, niezależnie od godziny
         data["price_tomorrow"] = await fetch_prices(tomorrow, resolution="hour")
         # Prosumer pricing
+        # Pobieraj prosumer_price_today i prosumer_price_tomorrow zawsze, niezależnie od godziny
         data["prosumer_price_today"] = await fetch_prosumer_prices(today)
-        if datetime.utcnow().hour >= 14:
-            data["prosumer_price_tomorrow"] = await fetch_prosumer_prices(tomorrow)
-        else:
-            data["prosumer_price_tomorrow"] = None
+        data["prosumer_price_tomorrow"] = await fetch_prosumer_prices(tomorrow)
         # Aggregaty pricing
         # Dzień
         data["price_day"] = await fetch_prices(today, resolution="day")
@@ -295,8 +293,8 @@ class PstrykProsumerPriceSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def available(self):
-        data = self.coordinator.data.get(self._sensor_type)
-        return data is not None and data.get("frames") is not None
+        # Encja zawsze dostępna, nawet jeśli nie ma jeszcze danych (frames)
+        return True
 
     @property
     def native_value(self):
