@@ -47,11 +47,11 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             return await fetch_json(url)
 
         async def fetch_prices(day, resolution="hour"):
-            # Endpoint: https://api.pstryk.pl/pricing/?resolution=hour&window_start=UTC_START&window_end=UTC_END
+            # Endpoint: https://api.pstryk.pl/integrations/pricing/?resolution=hour&window_start=UTC_START&window_end=UTC_END
             # Dla strefy Europe/Warsaw musimy przesunąć okno o -2h względem północy lokalnej
             import pytz
             import tzlocal
-            base = "https://api.pstryk.pl/pricing/"
+            base = "https://api.pstryk.pl/integrations/pricing/"
             # Ustal strefę czasową systemu lub z configu
             try:
                 for entry in self.hass.config_entries.async_entries(DOMAIN):
