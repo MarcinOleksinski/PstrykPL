@@ -34,6 +34,7 @@ Integracja Home Assistant z platformą pstryk.pl, umożliwiająca automatyczne p
 - Konfiguracja i rekonfiguracja odbywa się przez interfejs Home Assistant (config flow/options flow).
 
 
+
 ## Przykładowe encje
 - `sensor.pstryk_price_today` – ceny godzinowe na dziś
 - `sensor.pstryk_price_tomorrow` – ceny godzinowe na jutro (po 14:00)
@@ -44,6 +45,10 @@ Integracja Home Assistant z platformą pstryk.pl, umożliwiająca automatyczne p
 - `sensor.pstryk_prosumer_price_today` – cena prosumencka (jeśli dostępna)
 - `sensor.pstryk_api_status` – status API
 - `sensor.pstryk_integration_version` – wersja integracji
+
+### Uwaga dotycząca dostępności cen:
+**Po godzinie 14:00 API Pstryk publikuje ceny tylko na kolejny dzień.**
+Oznacza to, że po 14:00 encja `sensor.pstryk_price_today` może nie zawierać już danych (API zwraca pusty słownik), natomiast pojawiają się dane dla `sensor.pstryk_price_tomorrow`. Jest to zgodne z logiką działania API Pstryk i nie jest błędem integracji.
 
 
 ## Licencja

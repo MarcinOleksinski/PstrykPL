@@ -126,6 +126,10 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         # Standard pricing
         # Ustal okno czasowe dla agregacji (window_start, window_end)
         # Dla day/month/year window_start to pierwszy dzień okresu
+        # UWAGA:
+        # Po godzinie 14:00 API Pstryk publikuje ceny tylko na kolejny dzień.
+        # Oznacza to, że po 14:00 price_today może być pusty (API zwraca pusty słownik),
+        # a pojawiają się dane dla price_tomorrow. To nie jest błąd integracji.
         data["price_today"] = await fetch_prices(today, resolution="hour")
         _LOGGER.warning(f"[PSTRYK DEBUG] price_today result: {data['price_today']}")
         if datetime.utcnow().hour >= 14:
