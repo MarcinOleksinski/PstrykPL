@@ -217,7 +217,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     sensors = [
         PstrykPriceSensor(coordinator, "price_today"),
         PstrykPriceSensor(coordinator, "price_tomorrow"),
-        PstrykCarbonFootprintSensor(coordinator),
         PstrykEnergyCostSensor(coordinator),
         PstrykEnergyUsageSensor(coordinator),
         # 1. Prosumer pricing sensors
@@ -227,7 +226,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
         *[PstrykHourlyPriceSensor(coordinator, hour) for hour in range(24)],
         # 3. Total value sensors
         PstrykTotalSensor(coordinator, "fae_total_cost", "Pstryk Total Energy Cost", "PLN", "mdi:cash-multiple"),
-        PstrykTotalSensor(coordinator, "carbon_footprint_total", "Pstryk Total Carbon Footprint", "gCO2eq", "mdi:cloud"),
         PstrykTotalSensor(coordinator, "fae_total_usage", "Pstryk Total Energy Usage", "kWh", "mdi:flash"),
         PstrykTotalSensor(coordinator, "total_energy_sold_value", "Pstryk Total Energy Sold", "PLN", "mdi:transmission-tower-export"),
         # 4. Flag sensors
