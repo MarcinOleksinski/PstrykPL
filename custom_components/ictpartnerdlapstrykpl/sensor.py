@@ -2,6 +2,9 @@
 # --- Coordinator for API data ---
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
+
+import pytz
+
 class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, api_key):
         super().__init__(
@@ -11,6 +14,51 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             update_interval=SCAN_INTERVAL,
         )
         self.api_key = api_key
+        # Ustal strefę czasową z configu (jak w fetch_prices)
+        timezone = "Europe/Warsaw"
+        try:
+            for entry in hass.config_entries.async_entries(DOMAIN):
+                if entry.data.get("for_tz"):
+                    timezone = entry.data["for_tz"]
+                    break
+                if entry.options.get("for_tz"):
+                    timezone = entry.options["for_tz"]
+                    break
+        except Exception:
+            timezone = "Europe/Warsaw"
+        self.timezone = timezone
+def find_frame_for_local_hour(frames, hour, timezone):
+    """
+    Szuka frame, którego 'start' odpowiada danej godzinie lokalnej (w strefie timezone).
+    Zwraca frame lub None.
+    """
+    if not frames:
+        return None
+    import pytz
+    from datetime import datetime, date, time
+    local = pytz.timezone(timezone)
+    # Dla dzisiejszej daty, godzina = hour
+    today = datetime.now(local).date()
+    local_dt = local.localize(datetime.combine(today, time(hour, 0)))
+    utc_dt = local_dt.astimezone(pytz.utc)
+    utc_str = utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Szukaj frame o start == utc_str
+    for frame in frames:
+        if frame.get("start") == utc_str:
+            return frame
+    # Jeśli nie ma dokładnego, znajdź najbliższy czasowo
+    min_diff = None
+    best_frame = None
+    for frame in frames:
+        try:
+            frame_start = datetime.strptime(frame.get("start"), "%Y-%m-%dT%H:%M:%SZ")
+            diff = abs((frame_start - utc_dt).total_seconds())
+            if min_diff is None or diff < min_diff:
+                min_diff = diff
+                best_frame = frame
+        except Exception:
+            continue
+    return best_frame
 
     async def _async_update_data(self):
         today = datetime.utcnow().date()
@@ -254,7 +302,6 @@ class PstrykProsumerPriceSensor(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = "PLN/kWh"
         self._attr_unique_id = f"pstryk_{sensor_type}"
 
-
     @property
     def available(self):
         data = self.coordinator.data.get(self._sensor_type)
@@ -265,10 +312,12 @@ class PstrykProsumerPriceSensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data.get(self._sensor_type)
         if not data or not data.get("frames"):
             return None
-        now = datetime.utcnow().hour
         frames = data["frames"]
-        if now < len(frames):
-            return frames[now].get("price_gross_avg")
+        # Użyj mapowania po godzinie lokalnej
+        hour = datetime.now(pytz.timezone(self.coordinator.timezone)).hour
+        frame = find_frame_for_local_hour(frames, hour, self.coordinator.timezone)
+        if frame:
+            return frame.get("price_gross_avg")
         return None
 
     @property
@@ -295,8 +344,9 @@ class PstrykHourlyPriceSensor(CoordinatorEntity, SensorEntity):
         if not data or not data.get("frames"):
             return None
         frames = data["frames"]
-        if self._hour < len(frames):
-            return frames[self._hour].get("price_gross_avg")
+        frame = find_frame_for_local_hour(frames, self._hour, self.coordinator.timezone)
+        if frame:
+            return frame.get("price_gross_avg")
         return None
 
     @property
@@ -486,10 +536,12 @@ class PstrykPriceSensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data.get(self._sensor_type)
         if not data or not data.get("frames"):
             return None
-        now = datetime.utcnow().hour
         frames = data["frames"]
-        if now < len(frames):
-            return frames[now].get("price_gross_avg")
+        # Użyj bieżącej godziny lokalnej
+        hour = datetime.now(pytz.timezone(self.coordinator.timezone)).hour
+        frame = find_frame_for_local_hour(frames, hour, self.coordinator.timezone)
+        if frame:
+            return frame.get("price_gross_avg")
         return None
 
     @property
