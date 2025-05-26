@@ -46,10 +46,12 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             return await fetch_json(url)
 
         async def fetch_prices(day, resolution="hour"):
-            # Poprawny endpoint: https://api.pstryk.pl/pricing/?resolution=hour&window_start=YYYY-MM-DDT00:00:00Z&window_end=YYYY-MM-DDT23:59:59Z&for_tz=Europe/Warsaw
+            # Endpoint: https://api.pstryk.pl/pricing/?resolution=hour&window_start=UTC_START&window_end=UTC_END
+            # Dla strefy Europe/Warsaw musimy przesunąć okno o -2h względem północy lokalnej
+            import pytz
+            import tzlocal
             base = "https://api.pstryk.pl/pricing/"
-            # Pobierz strefę czasową z config entry (jeśli dostępna)
-            timezone = None
+            # Ustal strefę czasową systemu lub z configu
             try:
                 for entry in self.hass.config_entries.async_entries(DOMAIN):
                     if entry.data.get("for_tz"):
@@ -58,11 +60,19 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
                     if entry.options.get("for_tz"):
                         timezone = entry.options["for_tz"]
                         break
+                else:
+                    timezone = "Europe/Warsaw"
             except Exception:
-                pass
-            if not timezone:
                 timezone = "Europe/Warsaw"
-            params = f"resolution={resolution}&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z&for_tz={timezone}"
+            # Przesuń okno na UTC
+            local = pytz.timezone(timezone)
+            local_start = local.localize(datetime.combine(day, datetime.min.time()))
+            local_end = local_start + timedelta(hours=23, minutes=59, seconds=59)
+            utc_start = local_start.astimezone(pytz.utc)
+            utc_end = local_end.astimezone(pytz.utc)
+            window_start = utc_start.strftime("%Y-%m-%dT%H:%M:%SZ")
+            window_end = utc_end.strftime("%Y-%m-%dT%H:%M:%SZ")
+            params = f"resolution={resolution}&window_start={window_start}&window_end={window_end}"
             url = f"{base}?{params}"
             return await fetch_json(url)
 
