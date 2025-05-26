@@ -1,8 +1,6 @@
 
 # --- Coordinator for API data ---
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-
-
 import pytz
 
 class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
@@ -26,8 +24,163 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
                     break
         except Exception:
             timezone = "Europe/Warsaw"
-        self.timezone = timezone
 def find_frame_for_local_hour(frames, hour, timezone):
+        self.timezone = timezone
+
+    async def _async_update_data(self):
+        today = datetime.utcnow().date()
+        tomorrow = today + timedelta(days=1)
+        headers = {"Authorization": self.api_key}
+        session = async_get_clientsession(self.hass)
+
+        async def fetch_json(url):
+            _LOGGER.warning(f"[PSTRYK DEBUG] Fetching URL: {url}")
+            try:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 404:
+                        _LOGGER.info(f"Pstryk API 404 Not Found for {url} (endpoint or data not available)")
+                        return {}
+                    resp.raise_for_status()
+                    data = await resp.json()
+                    _LOGGER.warning(f"[PSTRYK DEBUG] API response for {url}: {data}")
+                    return data
+            except aiohttp.ClientResponseError as e:
+                if e.status == 404:
+                    _LOGGER.info(f"Pstryk API 404 Not Found for {url} (endpoint or data not available)")
+                    return {}
+                _LOGGER.warning(f"Error fetching {url}: {e}")
+                return {}
+            except Exception as e:
+                _LOGGER.warning(f"Error fetching {url}: {e}")
+                return {}
+
+        async def fetch_prosumer_prices(day):
+            # Buduj URL zawsze z ukośnikiem przed znakiem zapytania
+            base = "https://pstryk.pl/api/integrations/prosumer-pricing/"
+            params = f"resolution=hour&window_start={day}T00:00:00Z&window_end={day}T23:59:59Z"
+            url = f"{base}?{params}"
+            return await fetch_json(url)
+
+        async def fetch_prices(day, resolution="hour"):
+            # Endpoint: https://api.pstryk.pl/integrations/pricing/?resolution=hour&window_start=UTC_START&window_end=UTC_END
+            # Dla strefy Europe/Warsaw musimy przesunąć okno o -2h względem północy lokalnej
+            import pytz
+            import tzlocal
+            base = "https://api.pstryk.pl/integrations/pricing/"
+            # Ustal strefę czasową systemu lub z configu
+            try:
+                for entry in self.hass.config_entries.async_entries(DOMAIN):
+                    if entry.data.get("for_tz"):
+                        timezone = entry.data["for_tz"]
+                        break
+                    if entry.options.get("for_tz"):
+                        timezone = entry.options["for_tz"]
+                        break
+                else:
+                    timezone = "Europe/Warsaw"
+            except Exception:
+                timezone = "Europe/Warsaw"
+            # Przesuń okno na UTC
+            local = pytz.timezone(timezone)
+            local_start = local.localize(datetime.combine(day, datetime.min.time()))
+            local_end = local_start + timedelta(hours=23, minutes=59, seconds=59)
+            utc_start = local_start.astimezone(pytz.utc)
+            utc_end = local_end.astimezone(pytz.utc)
+            window_start = utc_start.strftime("%Y-%m-%dT%H:%M:%SZ")
+            window_end = utc_end.strftime("%Y-%m-%dT%H:%M:%SZ")
+            params = f"resolution={resolution}&window_start={window_start}&window_end={window_end}"
+            url = f"{base}?{params}"
+            return await fetch_json(url)
+
+        # carbon_footprint endpoint wyłączony 
+        async def fetch_carbon_footprint(resolution="hour"):
+            return {}
+
+        # Helper to get window_end for a given resolution
+        def get_window_end(start, resolution):
+            if resolution == "hour" or resolution == "day":
+                return start
+            elif resolution == "week":
+                # End of week (Sunday)
+                return (start + timedelta(days=(6 - start.weekday())))
+            elif resolution == "month":
+                # End of month
+                if start.month == 12:
+                    return start.replace(year=start.year+1, month=1, day=1) - timedelta(days=1)
+                else:
+                    return start.replace(month=start.month+1, day=1) - timedelta(days=1)
+            elif resolution == "year":
+                return start.replace(month=12, day=31)
+            return start
+
+        async def fetch_energy_cost(resolution="hour", start=None):
+            # Only hour, day, month supported for energy-cost
+            if resolution not in ("hour", "day", "month"):
+                return {}
+            if start is None:
+                start = today
+            window_start = f"{start}T00:00:00Z"
+            window_end = get_window_end(start, resolution)
+            window_end = f"{window_end}T23:59:59Z"
+            url = f"https://api.pstryk.pl/integrations/meter-data/energy-cost/?resolution={resolution}&window_start={window_start}&window_end={window_end}"
+            return await fetch_json(url)
+
+        async def fetch_energy_usage(resolution="hour", start=None):
+            # All resolutions supported for energy-usage
+            if start is None:
+                start = today
+            window_start = f"{start}T00:00:00Z"
+            window_end = get_window_end(start, resolution)
+            window_end = f"{window_end}T23:59:59Z"
+            url = f"https://api.pstryk.pl/integrations/meter-data/energy-usage/?resolution={resolution}&window_start={window_start}&window_end={window_end}"
+            return await fetch_json(url)
+
+        data = {}
+        # Standard pricing
+        # Ustal okno czasowe dla agregacji (window_start, window_end)
+        # Dla day/month/year window_start to pierwszy dzień okresu
+        # UWAGA:
+        # Po godzinie 14:00 API Pstryk publikuje ceny tylko na kolejny dzień.
+        # Oznacza to, że po 14:00 price_today może być pusty (API zwraca pusty słownik),
+        # a pojawiają się dane dla price_tomorrow. To nie jest błąd integracji.
+        data["price_today"] = await fetch_prices(today, resolution="hour")
+        _LOGGER.warning(f"[PSTRYK DEBUG] price_today result: {data['price_today']}")
+        if datetime.utcnow().hour >= 14:
+            data["price_tomorrow"] = await fetch_prices(tomorrow, resolution="hour")
+        else:
+            data["price_tomorrow"] = None
+        # Prosumer pricing
+        data["prosumer_price_today"] = await fetch_prosumer_prices(today)
+        if datetime.utcnow().hour >= 14:
+            data["prosumer_price_tomorrow"] = await fetch_prosumer_prices(tomorrow)
+        else:
+            data["prosumer_price_tomorrow"] = None
+        # Aggregaty pricing
+        # Dzień
+        data["price_day"] = await fetch_prices(today, resolution="day")
+        # Miesiąc
+        first_of_month = today.replace(day=1)
+        data["price_month"] = await fetch_prices(first_of_month, resolution="month")
+        # Rok
+        first_of_year = today.replace(month=1, day=1)
+        data["price_year"] = await fetch_prices(first_of_year, resolution="year")
+        # carbon_footprint endpoint wyłączony
+        data["carbon_footprint"] = {}
+        data["carbon_footprint_day"] = {}
+        data["carbon_footprint_month"] = {}
+        data["carbon_footprint_year"] = {}
+        data["energy_cost"] = await fetch_energy_cost(resolution="hour", start=today)
+        data["energy_cost_day"] = await fetch_energy_cost(resolution="day", start=today)
+        # Nie ma agregacji tygodniowej dla energy-cost
+        data["energy_cost_week"] = {}
+        data["energy_cost_month"] = await fetch_energy_cost(resolution="month", start=today)
+        # No year aggregation for energy-cost
+        data["energy_usage"] = await fetch_energy_usage(resolution="hour", start=today)
+        data["energy_usage_day"] = await fetch_energy_usage(resolution="day", start=today)
+        data["energy_usage_week"] = await fetch_energy_usage(resolution="week", start=today)
+        data["energy_usage_month"] = await fetch_energy_usage(resolution="month", start=today)
+        data["energy_usage_year"] = await fetch_energy_usage(resolution="year", start=today)
+        return data
     """
     Szuka frame, którego 'start' odpowiada danej godzinie lokalnej (w strefie timezone).
     Zwraca frame lub None.
