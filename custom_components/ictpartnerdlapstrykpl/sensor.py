@@ -60,6 +60,7 @@ def find_frame_for_local_hour(frames, hour, timezone):
             continue
     return best_frame
 
+
     async def _async_update_data(self):
         today = datetime.utcnow().date()
         tomorrow = today + timedelta(days=1)
@@ -125,11 +126,9 @@ def find_frame_for_local_hour(frames, hour, timezone):
             url = f"{base}?{params}"
             return await fetch_json(url)
 
-
         # carbon_footprint endpoint wyłączony 
         async def fetch_carbon_footprint(resolution="hour"):
             return {}
-
 
         # Helper to get window_end for a given resolution
         def get_window_end(start, resolution):
@@ -241,11 +240,6 @@ SENSOR_TYPES = {
         "unit": "PLN/kWh",
         "icon": "mdi:currency-usd",
     },
-    "carbon_footprint": {
-        "name": "Pstryk Carbon Footprint",
-        "unit": "gCO2eq",
-        "icon": "mdi:cloud",
-    },
     "energy_cost": {
         "name": "Pstryk Energy Cost",
         "unit": "PLN",
@@ -267,27 +261,27 @@ async def async_setup_entry(hass, entry, async_add_entities):
         PstrykPriceSensor(coordinator, "price_tomorrow"),
         PstrykEnergyCostSensor(coordinator),
         PstrykEnergyUsageSensor(coordinator),
-        # 1. Prosumer pricing sensors
+        # Prosumer pricing sensors
         PstrykProsumerPriceSensor(coordinator, "prosumer_price_today"),
         PstrykProsumerPriceSensor(coordinator, "prosumer_price_tomorrow"),
-        # 2. Hourly price sensors for today (example: 24h)
+        # Hourly price sensors for today (24h)
         *[PstrykHourlyPriceSensor(coordinator, hour) for hour in range(24)],
-        # 3. Total value sensors
+        # Total value sensors
         PstrykTotalSensor(coordinator, "fae_total_cost", "Pstryk Total Energy Cost", "PLN", "mdi:cash-multiple"),
         PstrykTotalSensor(coordinator, "fae_total_usage", "Pstryk Total Energy Usage", "kWh", "mdi:flash"),
         PstrykTotalSensor(coordinator, "total_energy_sold_value", "Pstryk Total Energy Sold", "PLN", "mdi:transmission-tower-export"),
-        # 4. Flag sensors
+        # Flag sensors
         PstrykFlagSensor(coordinator, "is_expensive_now", "Pstryk Is Expensive Now", "mdi:alert"),
         PstrykFlagSensor(coordinator, "is_cheap_now", "Pstryk Is Cheap Now", "mdi:tag"),
         PstrykFlagSensor(coordinator, "is_live", "Pstryk Is Live", "mdi:clock"),
-        # 5. Daily/weekly/monthly/yearly sensors (example for daily)
+        # Daily aggregated sensor (example)
         PstrykAggregatedSensor(coordinator, "day"),
-        # 6. VAT, excise, fixed/variable cost sensors
+        # VAT, excise, fixed/variable cost sensors
         PstrykCostComponentSensor(coordinator, "vat"),
         PstrykCostComponentSensor(coordinator, "excise"),
         PstrykCostComponentSensor(coordinator, "fix_dist_cost_net"),
         PstrykCostComponentSensor(coordinator, "var_dist_cost_net"),
-        # 7. Info sensors
+        # Info sensors
         PstrykInfoSensor(coordinator, "last_update", "Pstryk Last Update", None, "mdi:update"),
         PstrykInfoSensor(coordinator, "integration_version", "Pstryk Integration Version", None, "mdi:information-outline"),
         PstrykApiStatusSensor(coordinator),
@@ -389,6 +383,7 @@ class PstrykFlagSensor(CoordinatorEntity, SensorEntity):
         self._attr_icon = icon
         self._attr_unique_id = f"pstryk_flag_{flag}"
 
+
     @property
     def available(self):
         data = self.coordinator.data.get("price_today")
@@ -399,8 +394,10 @@ class PstrykFlagSensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data.get("price_today")
         if not data or not data.get("frames"):
             return None
-        now = datetime.utcnow().hour
-        frame = data["frames"][now] if now < len(data["frames"]) else None
+        frames = data["frames"]
+        # Użyj bieżącej godziny lokalnej
+        hour = datetime.now(pytz.timezone(self.coordinator.timezone)).hour
+        frame = find_frame_for_local_hour(frames, hour, self.coordinator.timezone)
         if not frame:
             return None
         return frame.get(self._flag)
@@ -419,6 +416,7 @@ class PstrykAggregatedSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"pstryk_price_{resolution}"
 
 
+
     @property
     def available(self):
         key = f"price_{self._resolution}"
@@ -431,8 +429,15 @@ class PstrykAggregatedSensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data.get(key)
         if not data:
             return None
-        # Prefer price_gross_avg if available, else None
-        return data.get("price_gross_avg")
+        # Prefer price_gross_avg if available, else try to average frames
+        if data.get("price_gross_avg") is not None:
+            return data.get("price_gross_avg")
+        frames = data.get("frames")
+        if frames:
+            prices = [f.get("price_gross_avg") for f in frames if f.get("price_gross_avg") is not None]
+            if prices:
+                return sum(prices) / len(prices)
+        return None
 
     @property
     def extra_state_attributes(self):
