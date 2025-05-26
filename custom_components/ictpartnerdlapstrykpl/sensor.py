@@ -19,6 +19,7 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         session = async_get_clientsession(self.hass)
 
         async def fetch_json(url):
+            _LOGGER.warning(f"[PSTRYK DEBUG] Fetching URL: {url}")
             try:
                 async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status == 404:
@@ -26,7 +27,7 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
                         return {}
                     resp.raise_for_status()
                     data = await resp.json()
-                    _LOGGER.debug(f"Pstryk API response for {url}: {data}")
+                    _LOGGER.warning(f"[PSTRYK DEBUG] API response for {url}: {data}")
                     return data
             except aiohttp.ClientResponseError as e:
                 if e.status == 404:
@@ -126,6 +127,7 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         # Ustal okno czasowe dla agregacji (window_start, window_end)
         # Dla day/month/year window_start to pierwszy dzień okresu
         data["price_today"] = await fetch_prices(today, resolution="hour")
+        _LOGGER.warning(f"[PSTRYK DEBUG] price_today result: {data['price_today']}")
         if datetime.utcnow().hour >= 14:
             data["price_tomorrow"] = await fetch_prices(tomorrow, resolution="hour")
         else:
