@@ -14,17 +14,22 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         self.api_key = api_key
         # Ustal strefę czasową z configu (jak w fetch_prices)
         timezone = "Europe/Warsaw"
+        debug = False
         try:
             for entry in hass.config_entries.async_entries(DOMAIN):
                 if entry.data.get("for_tz"):
                     timezone = entry.data["for_tz"]
-                    break
                 if entry.options.get("for_tz"):
                     timezone = entry.options["for_tz"]
-                    break
+                # Nowa opcja debug
+                if entry.data.get("debug"):
+                    debug = entry.data["debug"]
+                if entry.options.get("debug"):
+                    debug = entry.options["debug"]
         except Exception:
             timezone = "Europe/Warsaw"
         self.timezone = timezone
+        self.debug = debug
 
     async def _async_update_data(self):
         today = datetime.utcnow().date()
@@ -33,24 +38,30 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         session = async_get_clientsession(self.hass)
 
         async def fetch_json(url):
-            _LOGGER.warning(f"[PSTRYK DEBUG] Fetching URL: {url}")
+            if self.debug:
+                _LOGGER.warning(f"[PSTRYK DEBUG] Fetching URL: {url}")
             try:
                 async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status == 404:
-                        _LOGGER.info(f"Pstryk API 404 Not Found for {url} (endpoint or data not available)")
+                        if self.debug:
+                            _LOGGER.info(f"Pstryk API 404 Not Found for {url} (endpoint or data not available)")
                         return {}
                     resp.raise_for_status()
                     data = await resp.json()
-                    _LOGGER.warning(f"[PSTRYK DEBUG] API response for {url}: {data}")
+                    if self.debug:
+                        _LOGGER.warning(f"[PSTRYK DEBUG] API response for {url}: {data}")
                     return data
             except aiohttp.ClientResponseError as e:
                 if e.status == 404:
-                    _LOGGER.info(f"Pstryk API 404 Not Found for {url} (endpoint or data not available)")
+                    if self.debug:
+                        _LOGGER.info(f"Pstryk API 404 Not Found for {url} (endpoint or data not available)")
                     return {}
-                _LOGGER.warning(f"Error fetching {url}: {e}")
+                if self.debug:
+                    _LOGGER.warning(f"Error fetching {url}: {e}")
                 return {}
             except Exception as e:
-                _LOGGER.warning(f"Error fetching {url}: {e}")
+                if self.debug:
+                    _LOGGER.warning(f"Error fetching {url}: {e}")
                 return {}
 
         async def fetch_prosumer_prices(day):
@@ -143,7 +154,8 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         # Oznacza to, że po 14:00 price_today może być pusty (API zwraca pusty słownik),
         # a pojawiają się dane dla price_tomorrow. To nie jest błąd integracji.
         data["price_today"] = await fetch_prices(today, resolution="hour")
-        _LOGGER.warning(f"[PSTRYK DEBUG] price_today result: {data['price_today']}")
+        if self.debug:
+            _LOGGER.warning(f"[PSTRYK DEBUG] price_today result: {data['price_today']}")
         # Pobieraj price_tomorrow zawsze, niezależnie od godziny
         data["price_tomorrow"] = await fetch_prices(tomorrow, resolution="hour")
         # Prosumer pricing

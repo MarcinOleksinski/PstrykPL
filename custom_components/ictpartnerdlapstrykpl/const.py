@@ -1,3 +1,4 @@
+CONF_DEBUG = "debug"
 DOMAIN = "ictpartnerdlapstrykpl"
 CONF_API_KEY = "api_key"
 CONF_METERS = "meters"

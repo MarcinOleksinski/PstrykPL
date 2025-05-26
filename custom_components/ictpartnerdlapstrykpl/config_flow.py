@@ -12,12 +12,14 @@ class ICTPartnerDlaPstrykOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         errors = {}
         data = {**self.config_entry.data, **self.config_entry.options}
+        from .const import CONF_DEBUG
         schema = vol.Schema({
             vol.Required(CONF_API_KEY, default=data.get(CONF_API_KEY, "")): str,
             vol.Optional(CONF_METERS, default=data.get(CONF_METERS, "main")): str,
             vol.Optional(CONF_TIMEZONE, default=data.get(CONF_TIMEZONE, "Europe/Warsaw")): str,
             vol.Optional(CONF_ALERT_PRICE, default=data.get(CONF_ALERT_PRICE, 1.0)): vol.Coerce(float),
             vol.Optional(CONF_ALERT_USAGE, default=data.get(CONF_ALERT_USAGE, 10.0)): vol.Coerce(float),
+            vol.Optional(CONF_DEBUG, default=data.get(CONF_DEBUG, False)): bool,
         })
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
@@ -34,12 +36,14 @@ class ICTPartnerDlaPstrykConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         errors = {}
+        from .const import CONF_DEBUG
         schema = vol.Schema({
             vol.Required(CONF_API_KEY): str,
             vol.Optional(CONF_METERS, default="main"): str,
             vol.Optional(CONF_TIMEZONE, default="Europe/Warsaw"): str,
             vol.Optional(CONF_ALERT_PRICE, default=1.0): vol.Coerce(float),
             vol.Optional(CONF_ALERT_USAGE, default=10.0): vol.Coerce(float),
+            vol.Optional(CONF_DEBUG, default=False): bool,
         })
         if user_input is not None:
             return self.async_create_entry(title="ictpartnerdlapstrykpl", data=user_input)
