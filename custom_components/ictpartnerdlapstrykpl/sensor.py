@@ -30,6 +30,14 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
             timezone = "Europe/Warsaw"
         self.timezone = timezone
         self.debug = debug
+        self.local_tz = None  # Will be set async
+        self._tz_ready = False
+
+    async def async_setup_timezone(self):
+        import pytz
+        if not self._tz_ready:
+            self.local_tz = await self.hass.async_add_executor_job(pytz.timezone, self.timezone)
+            self._tz_ready = True
 
 
     async def _async_update_data(self):
@@ -78,24 +86,11 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         async def fetch_prices(day, resolution="hour"):
             # Endpoint: https://api.pstryk.pl/integrations/pricing/?resolution=hour&window_start=UTC_START&window_end=UTC_END
             # Dla strefy Europe/Warsaw musimy przesunąć okno o -2h względem północy lokalnej
-            import pytz
-            import tzlocal
             base = "https://api.pstryk.pl/integrations/pricing/"
-            # Ustal strefę czasową systemu lub z configu
-            try:
-                for entry in self.hass.config_entries.async_entries(DOMAIN):
-                    if entry.data.get("for_tz"):
-                        timezone = entry.data["for_tz"]
-                        break
-                    if entry.options.get("for_tz"):
-                        timezone = entry.options["for_tz"]
-                        break
-                else:
-                    timezone = "Europe/Warsaw"
-            except Exception:
-                timezone = "Europe/Warsaw"
-            # Przesuń okno na UTC
-            local = pytz.timezone(timezone)
+            # Użyj już pobranej strefy czasowej (self.local_tz)
+            if self.local_tz is None:
+                await self.async_setup_timezone()
+            local = self.local_tz
             local_start = local.localize(datetime.combine(day, datetime.min.time()))
             local_end = local_start + timedelta(hours=23, minutes=59, seconds=59)
             utc_start = local_start.astimezone(pytz.utc)
@@ -501,6 +496,9 @@ class PstrykCostComponentSensor(CoordinatorEntity, SensorEntity):
         return {}
 
 class PstrykInfoSensor(CoordinatorEntity, SensorEntity):
+    _manifest_version = None
+    _manifest_version_loaded = False
+
     def __init__(self, coordinator, key, name, unit, icon):
         super().__init__(coordinator)
         self._key = key
@@ -513,20 +511,38 @@ class PstrykInfoSensor(CoordinatorEntity, SensorEntity):
     def available(self):
         return True
 
+    async def async_get_version(self):
+        if getattr(self, '_manifest_version_loaded', False):
+            return getattr(self, '_manifest_version', None)
+        import os
+        import json
+        import asyncio
+        manifest_path = os.path.join(os.path.dirname(__file__), "manifest.json")
+        try:
+            def read_manifest():
+                with open(manifest_path, "r") as f:
+                    return json.load(f)
+            manifest = await asyncio.to_thread(read_manifest)
+            self._manifest_version = manifest.get("version")
+            self._manifest_version_loaded = True
+            return self._manifest_version
+        except Exception:
+            self._manifest_version_loaded = True
+            self._manifest_version = None
+            return None
+
     @property
     def native_value(self):
         if self._key == "last_update":
             return datetime.utcnow().isoformat()
         if self._key == "integration_version":
-            import os
-            import json
-            try:
-                manifest_path = os.path.join(os.path.dirname(__file__), "manifest.json")
-                with open(manifest_path, "r") as f:
-                    manifest = json.load(f)
-                    return manifest.get("version")
-            except Exception:
-                return None
+            # Return cached version if loaded, else schedule async load
+            if self._manifest_version_loaded:
+                return self._manifest_version
+            # Schedule async load (will update on next refresh)
+            import asyncio
+            asyncio.create_task(self.async_get_version())
+            return None
         return None
 
     @property
