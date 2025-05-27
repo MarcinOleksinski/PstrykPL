@@ -31,12 +31,14 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         self.timezone = timezone
         self.debug = debug
 
+
     async def _async_update_data(self):
         today = datetime.utcnow().date()
         tomorrow = today + timedelta(days=1)
         headers = {"Authorization": self.api_key}
         session = async_get_clientsession(self.hass)
 
+        import asyncio
         async def fetch_json(url):
             if self.debug:
                 _LOGGER.warning(f"[PSTRYK DEBUG] Fetching URL: {url}")
@@ -51,6 +53,9 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
                     if self.debug:
                         _LOGGER.warning(f"[PSTRYK DEBUG] API response for {url}: {data}")
                     return data
+            except asyncio.TimeoutError:
+                _LOGGER.error(f"[PSTRYK ERROR] Timeout while fetching {url}")
+                return {}
             except aiohttp.ClientResponseError as e:
                 if e.status == 404:
                     if self.debug:
@@ -60,8 +65,7 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
                     _LOGGER.warning(f"Error fetching {url}: {e}")
                 return {}
             except Exception as e:
-                if self.debug:
-                    _LOGGER.warning(f"Error fetching {url}: {e}")
+                _LOGGER.error(f"[PSTRYK ERROR] Exception while fetching {url}: {e}")
                 return {}
 
         async def fetch_prosumer_prices(day):
