@@ -199,22 +199,39 @@ def find_frame_for_local_hour(frames, hour, timezone):
         return None
     import pytz
     from datetime import datetime, date, time
+    import re
     local = pytz.timezone(timezone)
-    # Dla dzisiejszej daty, godzina = hour
     today = datetime.now(local).date()
     local_dt = local.localize(datetime.combine(today, time(hour, 0)))
     utc_dt = local_dt.astimezone(pytz.utc)
+    # Akceptuj zarówno 'Z' jak i '+00:00' w polu start
+    def normalize_utc_string(dt):
+        # Zamień np. '2025-05-27T10:00:00+00:00' na '2025-05-27T10:00:00Z'
+        if dt.endswith('+00:00'):
+            return dt[:-6] + 'Z'
+        return dt
     utc_str = utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    # Szukaj frame o start == utc_str
     for frame in frames:
-        if frame.get("start") == utc_str:
+        start = frame.get("start")
+        if not start:
+            continue
+        if normalize_utc_string(start) == utc_str:
             return frame
-    # Jeśli nie ma dokładnego, znajdź najbliższy czasowo
+    # Jeśli nie ma dokładnego, znajdź najbliższy czasowo (parsuj oba formaty)
     min_diff = None
     best_frame = None
     for frame in frames:
         try:
-            frame_start = datetime.strptime(frame.get("start"), "%Y-%m-%dT%H:%M:%SZ")
+            start = frame.get("start")
+            # Obsłuż oba formaty: 'Z' i '+00:00'
+            if start.endswith('Z'):
+                frame_start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ")
+                frame_start = frame_start.replace(tzinfo=pytz.utc)
+            elif start.endswith('+00:00'):
+                frame_start = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S+00:00")
+                frame_start = frame_start.replace(tzinfo=pytz.utc)
+            else:
+                continue
             diff = abs((frame_start - utc_dt).total_seconds())
             if min_diff is None or diff < min_diff:
                 min_diff = diff
