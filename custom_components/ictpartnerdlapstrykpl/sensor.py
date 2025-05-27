@@ -205,7 +205,8 @@ def find_frame_for_local_hour(frames, hour, timezone):
     from datetime import datetime, date, time
     import re
     local = pytz.timezone(timezone)
-    today = datetime.now(local).date()
+    # Użyj daty z UTC, zmapowanej na lokalną strefę
+    today = datetime.utcnow().astimezone(local).date()
     local_dt = local.localize(datetime.combine(today, time(hour, 0)))
     utc_dt = local_dt.astimezone(pytz.utc)
     # Akceptuj zarówno 'Z' jak i '+00:00' w polu start
