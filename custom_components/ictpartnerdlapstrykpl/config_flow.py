@@ -7,11 +7,19 @@ from .const import DOMAIN, CONF_METERS, CONF_TIMEZONE, CONF_ALERT_PRICE, CONF_AL
 
 class ICTPartnerDlaPstrykOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry):
-        self.config_entry = config_entry
+        super().__init__()
+        # Nie zapisuj config_entry do self.config_entry (deprecated)
+        # Używaj przekazanego config_entry bezpośrednio w metodach
 
     async def async_step_init(self, user_input=None):
         errors = {}
-        data = {**self.config_entry.data, **self.config_entry.options}
+        # Użyj self.config_entry przekazanego do konstruktora przez argument
+        config_entry = self.options_flow.config_entry if hasattr(self, 'options_flow') and hasattr(self.options_flow, 'config_entry') else None
+        if config_entry is None:
+            # Fallback: spróbuj z user_input (przy pierwszej konfiguracji)
+            data = user_input or {}
+        else:
+            data = {**config_entry.data, **config_entry.options}
         from .const import CONF_DEBUG
         schema = vol.Schema({
             vol.Required(CONF_API_KEY, default=data.get(CONF_API_KEY, "")): str,
