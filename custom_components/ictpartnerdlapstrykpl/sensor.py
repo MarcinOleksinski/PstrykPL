@@ -219,6 +219,13 @@ class PstrykPriceDaySensor(CoordinatorEntity, SensorEntity):
             "price_net_avg": data.get("price_net_avg"),
             "price_gross_avg": data.get("price_gross_avg"),
         }
+
+    # --- KONIEC KLASY SENSORA ---
+
+    # carbon_footprint endpoint wyłączony
+# --- PRAWIDŁOWE ZAMKNIĘCIE FUNKCJI _async_update_data ---
+    async def _async_update_data(self):
+        ... # (cała dotychczasowa zawartość)
         # carbon_footprint endpoint wyłączony
         data["carbon_footprint"] = {}
         data["carbon_footprint_day"] = {}
