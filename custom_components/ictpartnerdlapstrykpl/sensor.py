@@ -162,14 +162,63 @@ class PstrykDataUpdateCoordinator(DataUpdateCoordinator):
         data["prosumer_price_today"] = await fetch_prosumer_prices(today)
         data["prosumer_price_tomorrow"] = await fetch_prosumer_prices(tomorrow)
         # Aggregaty pricing
-        # Dzień
+        # Dzień (agregacja dobowa UTC)
         data["price_day"] = await fetch_prices(today, resolution="day")
+        # Dzień (agregacja godzinowa UTC przesunięta na dobę lokalną)
+        # Okno: 22:00 dnia poprzedniego UTC do 21:59:59 dnia bieżącego UTC
+        local = self.local_tz or pytz.timezone(self.timezone)
+        # Dla Europe/Warsaw: UTC+2, więc 00:00 lokalne = 22:00 dnia poprzedniego UTC
+        local_midnight = local.localize(datetime.combine(today, datetime.min.time()))
+        utc_start = (local_midnight - timedelta(hours=2)).astimezone(pytz.utc)
+        utc_end = (local_midnight + timedelta(hours=21, minutes=59, seconds=59)).astimezone(pytz.utc)
+        window_start = utc_start.strftime("%Y-%m-%dT%H:%M:%SZ")
+        window_end = utc_end.strftime("%Y-%m-%dT%H:%M:%SZ")
+        url = f"https://api.pstryk.pl/integrations/pricing/?resolution=hour&window_start={window_start}&window_end={window_end}"
+        data["price_day_hour"] = await fetch_json(url)
         # Miesiąc
         first_of_month = today.replace(day=1)
         data["price_month"] = await fetch_prices(first_of_month, resolution="month")
         # Rok
         first_of_year = today.replace(month=1, day=1)
         data["price_year"] = await fetch_prices(first_of_year, resolution="year")
+class PstrykPriceDaySensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator):
+        super().__init__(coordinator)
+        self._attr_name = "Pstryk Price Day (UTC+2)"
+        self._attr_icon = "mdi:calendar-today"
+        self._attr_native_unit_of_measurement = "PLN/kWh"
+        self._attr_unique_id = "pstryk_price_day"
+
+    @property
+    def available(self):
+        data = self.coordinator.data.get("price_day_hour")
+        return data is not None and (data.get("price_gross_avg") is not None or data.get("frames") is not None)
+
+    @property
+    def native_value(self):
+        data = self.coordinator.data.get("price_day_hour")
+        if not data:
+            return None
+        # Prefer price_gross_avg if available, else try to average frames
+        if data.get("price_gross_avg") is not None:
+            return data.get("price_gross_avg")
+        frames = data.get("frames")
+        if frames:
+            prices = [f.get("price_gross") for f in frames if f.get("price_gross") is not None]
+            if prices:
+                return sum(prices) / len(prices)
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        data = self.coordinator.data.get("price_day_hour")
+        if not data:
+            return {}
+        return {
+            "frames": data.get("frames", []),
+            "price_net_avg": data.get("price_net_avg"),
+            "price_gross_avg": data.get("price_gross_avg"),
+        }
         # carbon_footprint endpoint wyłączony
         data["carbon_footprint"] = {}
         data["carbon_footprint_day"] = {}
@@ -300,6 +349,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
         PstrykFlagSensor(coordinator, "is_live", "Pstryk Is Live", "mdi:clock"),
         # Daily aggregated sensor (example)
         PstrykAggregatedSensor(coordinator, "day"),
+        # Nowy sensor dobowy UTC+2
+        PstrykPriceDaySensor(coordinator),
         # VAT, excise, fixed/variable cost sensors
         PstrykCostComponentSensor(coordinator, "vat"),
         PstrykCostComponentSensor(coordinator, "excise"),
